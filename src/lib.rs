@@ -1,19 +1,28 @@
-use ::alsa::poll::poll;
 use ::alsa::seq::EventType;
-use ::alsa::{Direction, PollDescriptors};
 use alsa::seq::{EvCtrl, EvNote};
 use anyhow::Result;
+use bpaf::Bpaf;
 
-use crate::hw::{open_audio_device, open_midi_device, read_midi_event, write_samples_direct, SF};
+use crate::hw::IO;
 use crate::synth::Synth;
 
 mod envelope;
 mod hw;
 mod lfo;
+mod midi;
 mod oscillator;
+mod pcm;
 mod synth;
 mod tables;
 
+#[derive(Bpaf)]
+#[bpaf(options)]
+pub struct Options {
+    #[bpaf(short('m'), long, argument)]
+    pub main_port: i32,
+    #[bpaf(short('a'), long, argument)]
+    pub aux_port: i32,
+}
 // #[cfg(test)]
 // mod tests {
 //     use crate::hw::open_midi_device;
@@ -24,21 +33,19 @@ mod tables;
 //     }
 // }
 
-pub fn run() -> Result<()> {
-    let audio_dev = open_audio_device()?;
-    let midi_dev = open_midi_device()?;
-    let mut midi_input = midi_dev.input();
+pub fn run(options: Options) -> Result<()> {
+    let main_port = options.main_port;
+    let aux_port = options.aux_port;
+
+    let mut io = IO::new(main_port, aux_port, "hw:0")?;
     let mut synth = Synth::new();
-    let mut mmap = audio_dev.direct_mmap_playback::<SF>()?;
-    let mut fds = audio_dev.get()?;
-    fds.append(&mut (&midi_dev, Some(Direction::Capture)).get()?);
 
     let mut collecting = false;
 
     loop {
-        write_samples_direct(&audio_dev, &mut mmap, &mut synth)?;
+        io.write(&mut synth)?;
 
-        if let Some(event) = read_midi_event(&mut midi_input)? {
+        if let Some(event) = io.read()? {
             match event.get_type() {
                 EventType::Noteoff => {
                     if let Some(EvNote { note, .. }) = event.get_data() {
@@ -85,6 +92,6 @@ pub fn run() -> Result<()> {
             }
         }
 
-        poll(&mut fds, -1)?;
+        io.poll()?;
     }
 }

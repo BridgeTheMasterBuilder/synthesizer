@@ -21,7 +21,6 @@ impl Envelope {
     pub fn adjust_volume(&mut self) {
         if self.delay > 0 {
             self.delay -= 1;
-            return;
         } else {
             self.delay = Self::DELAY;
 

@@ -152,7 +152,7 @@ impl Synth {
             }
         }
 
-        self.log();
+        // self.log();
     }
 
     // fn log(&self) {
