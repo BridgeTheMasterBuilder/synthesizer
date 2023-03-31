@@ -1,7 +1,7 @@
 use std::ffi::CString;
 
 use alsa::seq;
-use alsa::seq::{Event, EventType, Input};
+use alsa::seq::{Event, EventType, Input, PortInfo};
 use anyhow::Result;
 
 pub struct MidiInputStream {
@@ -36,28 +36,35 @@ impl MidiInputStream {
         s.create_port(&dinfo).unwrap();
         let dport = dinfo.get_port();
 
-        let client = seq::ClientIter::new(&s)
-            .find_map(|client| {
-                seq::PortIter::new(&s, client.get_client()).find_map(|port| {
-                    if port.get_client() == main_port {
-                        Some(port)
-                    } else {
-                        None
-                    }
-                })
+        let clients: Vec<PortInfo> = [main_port, aux_port]
+            .into_iter()
+            .map(|p| {
+                seq::ClientIter::new(&s)
+                    .find_map(|client| {
+                        seq::PortIter::new(&s, client.get_client()).find_map(|port| {
+                            if port.get_client() == p {
+                                Some(port)
+                            } else {
+                                None
+                            }
+                        })
+                    })
+                    .unwrap()
             })
-            .unwrap();
+            .collect();
 
-        let sub = seq::PortSubscribe::empty()?;
-        sub.set_sender(seq::Addr {
-            client: client.get_client(),
-            port: client.get_port(),
-        });
-        sub.set_dest(seq::Addr {
-            client: s.client_id()?,
-            port: dport,
-        });
-        s.subscribe_port(&sub)?;
+        for client in clients {
+            let sub = seq::PortSubscribe::empty()?;
+            sub.set_sender(seq::Addr {
+                client: client.get_client(),
+                port: client.get_port(),
+            });
+            sub.set_dest(seq::Addr {
+                client: s.client_id()?,
+                port: dport,
+            });
+            s.subscribe_port(&sub)?;
+        }
 
         println!("Opening MIDI device");
 

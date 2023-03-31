@@ -48,31 +48,41 @@ pub fn run(options: Options) -> Result<()> {
         if let Some(event) = io.read()? {
             match event.get_type() {
                 EventType::Noteoff => {
-                    if let Some(EvNote { note, .. }) = event.get_data() {
-                        match note {
-                            21..=33 => collecting = false,
-                            34..=45 if !collecting => {
-                                synth.change_tuning(note);
-                            }
-                            _ => {
-                                synth.silence(note);
-                            }
+                    if let Some(EvNote { channel, note, .. }) = event.get_data() {
+                        match channel {
+                            0 => match note {
+                                48..=59 => collecting = false,
+                                60..=72 if !collecting => {
+                                    synth.change_tuning(note);
+                                }
+                                _ => (),
+                            },
+                            1 => synth.silence(note),
+                            _ => unreachable!(),
                         }
                     }
                 }
                 EventType::Noteon => {
-                    if let Some(EvNote { note, velocity, .. }) = event.get_data() {
-                        match note {
-                            note @ 21..=33 => {
-                                collecting = true;
-                                synth.change_fundamental(note);
-                            }
-                            34..=45 => {
-                                synth.change_tuning(note);
-                            }
-                            _ => {
-                                synth.play(note, velocity);
-                            }
+                    if let Some(EvNote {
+                        channel,
+                        note,
+                        velocity,
+                        ..
+                    }) = event.get_data()
+                    {
+                        match channel {
+                            0 => match note {
+                                48..=59 => {
+                                    collecting = true;
+                                    synth.change_fundamental(note);
+                                }
+                                60..=72 => {
+                                    synth.change_tuning(note);
+                                }
+                                _ => (),
+                            },
+                            1 => synth.play(note, velocity),
+                            _ => unreachable!(),
                         }
                     }
                 }

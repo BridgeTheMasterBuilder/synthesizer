@@ -34,7 +34,7 @@ impl Synth {
     }
 
     pub fn change_tuning(&mut self, note: u8) {
-        match note - 33 {
+        match note - 60 {
             1 => self.table ^= 0b10_0000,
             4 => self.table ^= 0b00_0010,
             6 => self.table ^= 0b00_1000,
@@ -49,7 +49,7 @@ impl Synth {
     }
 
     pub fn change_fundamental(&mut self, note: u8) {
-        let normalized_base = note + 36;
+        let normalized_base = note + 12;
         let interval = (normalized_base - 60) as i8;
 
         if let Some(freq) = Self::transform_freq(264.0, interval, &TABLES[PYTHAGOREAN as usize]) {
@@ -57,7 +57,7 @@ impl Synth {
             self.last_freq = freq;
             self.retune();
         }
-        // self.log();
+        self.log();
     }
 
     fn retune(&mut self) {
@@ -82,7 +82,7 @@ impl Synth {
                 }
             }
         }
-        // self.log();
+        self.log();
     }
 
     fn transform_freq(freq: f64, midi_interval: i8, interval_table: &[f64]) -> Option<f64> {
@@ -152,20 +152,20 @@ impl Synth {
             }
         }
 
-        // self.log();
+        self.log();
     }
 
-    // fn log(&self) {
-    //     println!("Fundamental: {} - {}", self.last_note, self.last_freq);
-    //     println!("Currently active voices:");
-    //     for (note, osc) in &self.voices {
-    //         if !osc.enabled {
-    //             continue;
-    //         }
-    //
-    //         println!("{note}: {}", osc.freq());
-    //     }
-    // }
+    fn log(&self) {
+        println!("Fundamental: {} - {}", self.last_note, self.last_freq);
+        println!("Currently active voices:");
+        for (note, osc) in &self.voices {
+            if !osc.enabled {
+                continue;
+            }
+
+            println!("{note}: {}", osc.freq());
+        }
+    }
 
     pub fn silence(&mut self, note: u8) {
         if let Some(voice) = self.voices.get_mut(&note) {
