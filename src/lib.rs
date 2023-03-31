@@ -14,6 +14,16 @@ mod oscillator;
 mod synth;
 mod tables;
 
+// #[cfg(test)]
+// mod tests {
+//     use crate::hw::open_midi_device;
+//
+//     #[test]
+//     fn f() {
+//         open_midi_device();
+//     }
+// }
+
 pub fn run() -> Result<()> {
     let audio_dev = open_audio_device()?;
     let midi_dev = open_midi_device()?;
@@ -73,8 +83,6 @@ pub fn run() -> Result<()> {
                 }
                 _ => {}
             }
-
-            continue;
         }
 
         poll(&mut fds, -1)?;
