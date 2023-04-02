@@ -1,74 +1,22 @@
 import math
 from fractions import Fraction
 
+nothing = Fraction(0, 1)
 unison = Fraction(1, 1)
 apotome = Fraction(2187, 2048)
-factors = {3, 5, 7, 11, 13, 17}
-category_names = ["Unison", "Minor 2nd", "Major 2nd", "Minor 3rd", "Major 3rd", "Perfect 4th", "Augmented 4th",
-                  "Perfect 5th", "Minor 6th", "Major 6th", "Minor 7th", "Major 7th"]
-tunings = [(3,),
-           (5,),
-           (3, 5),
-           (7,),
-           (3, 7),
-           (5, 7),
-           (3, 5, 7),
-           (11,),
-           (3, 11),
-           (5, 11),
-           (3, 5, 11),
-           (7, 11),
-           (3, 7, 11),
-           (5, 7, 11),
-           (3, 5, 7, 11),
-           (13,),
-           (3, 13),
-           (5, 13),
-           (3, 5, 13),
-           (7, 13),
-           (3, 7, 13),
-           (5, 7, 13),
-           (3, 5, 7, 13),
-           (11, 13),
-           (3, 11, 13),
-           (5, 11, 13),
-           (3, 5, 11, 13),
-           (7, 11, 13),
-           (3, 7, 11, 13),
-           (5, 7, 11, 13),
-           (3, 5, 7, 11, 13),
-           (17,),
-           (17, 3),
-           (17, 5),
-           (17, 3, 5),
-           (17, 7),
-           (17, 3, 7),
-           (17, 5, 7),
-           (17, 3, 5, 7),
-           (17, 11),
-           (17, 3, 11),
-           (17, 5, 11),
-           (17, 3, 5, 11),
-           (17, 7, 11),
-           (17, 3, 7, 11),
-           (17, 5, 7, 11),
-           (17, 3, 5, 7, 11),
-           (17, 13),
-           (17, 3, 13),
-           (17, 5, 13),
-           (17, 3, 5, 13),
-           (17, 7, 13),
-           (17, 3, 7, 13),
-           (17, 5, 7, 13),
-           (17, 3, 5, 7, 13),
-           (17, 11, 13),
-           (17, 3, 11, 13),
-           (17, 5, 11, 13),
-           (17, 3, 5, 11, 13),
-           (17, 7, 11, 13),
-           (17, 3, 7, 11, 13),
-           (17, 5, 7, 11, 13),
-           (17, 3, 5, 7, 11, 13)]
+factors = [3, 5, 7, 11, 13, 17, 19, 23, 29, 31]
+category_names = ['Unison', 'Minor 2nd', 'Major 2nd', 'Minor 3rd', 'Major 3rd', 'Perfect 4th', 'Augmented 4th',
+                  'Perfect 5th', 'Minor 6th', 'Major 6th', 'Minor 7th', 'Major 7th']
+
+
+def powerset(L):
+    result = [[]]
+    for e in L:
+        result.extend([subset + [e] for subset in result])
+    return result
+
+
+tunings = powerset(factors)
 
 
 def simpler_interval(interval1, interval2):
@@ -123,7 +71,10 @@ def generate_intervals_with_factors(intervals, factors):
 
 
 def interval_to_cents(interval):
-    return math.log2(interval) * 1200
+    if interval == 0:
+        return 0.0
+    else:
+        return math.log2(interval) * 1200
 
 
 def partition_intervals(intervals):
@@ -168,7 +119,7 @@ def partition_intervals(intervals):
         elif 1050 <= cents < 1150:
             M7.add(interval)
 
-    return list(map(lambda category: {unison} if len(category) == 0 else category,
+    return list(map(lambda category: {nothing} if len(category) == 0 else category,
                     [unis, m2, M2, m3, M3, P4, A4, P5, m6, M6, m7, M7]))
 
 
@@ -182,17 +133,25 @@ def simplest_interval(intervals):
     return simplest_interval
 
 
-# TODO also add code to generate the tables used in build.rs directly
+tables = open('../tables.rs', 'w')
+table = open('table', 'w')
+
+tables.write(f'pub const TABLES: [[f64; 12]; {len(tunings)}] = [\n')
 for factors in tunings:
-    print(f"Prime factors: {sorted(factors)}")
+    table.write(f'Prime factors: {sorted(factors)}\n')
 
     intervals = generate_intervals_with_factors({unison}, factors)
     intervals = filter(lambda x: simpler_interval(x, apotome) == x, intervals)
     categories = partition_intervals(intervals)
 
+    tables.write('\t[\n')
     for idx, category in enumerate(categories):
         if len(category) != 0:
             interval = simplest_interval(category)
-            print(f"{category_names[idx]}: {interval} ({interval_to_cents(interval)})")
+            num, denom = interval.as_integer_ratio()
+            tables.write(f'\t\t{num}.0/{denom}.0,\n')
+            table.write(f'{category_names[idx]}: {interval} ({interval_to_cents(interval)})\n')
 
-    print()
+    tables.write('\t],\n')
+    table.write('\n')
+tables.write('];\n')

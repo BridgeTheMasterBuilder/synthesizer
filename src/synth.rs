@@ -35,13 +35,17 @@ impl Synth {
 
     pub fn change_tuning(&mut self, note: u8) {
         match note - 60 {
-            1 => self.table ^= 0b10_0000,
-            4 => self.table ^= 0b00_0010,
-            6 => self.table ^= 0b00_1000,
-            7 => self.table ^= 0b00_0001,
-            8 => self.table ^= 0b01_0000,
-            10 => self.table ^= 0b00_0100,
-            12 => self.table = 0b00_0001,
+            1 => self.table ^= 0b00_0010_0000,
+            3 => self.table ^= 0b00_0100_0000,
+            4 => self.table ^= 0b00_0000_0010,
+            5 => self.table ^= 0b00_0000_1000,
+            6 => self.table ^= 0b00_1000_0000,
+            7 => self.table ^= 0b00_0000_0001,
+            8 => self.table ^= 0b00_0001_0000,
+            9 => self.table ^= 0b00_0000_0100,
+            10 => self.table ^= 0b01_0000_0000,
+            11 => self.table ^= 0b10_0000_0000,
+            12 => self.table = 0b00_0000_0001,
             _ => {}
         }
 
