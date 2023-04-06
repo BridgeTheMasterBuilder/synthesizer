@@ -61,7 +61,7 @@ impl Synth {
             self.last_freq = freq;
             self.retune();
         }
-        self.log();
+        // self.log();
     }
 
     fn retune(&mut self) {
@@ -86,7 +86,7 @@ impl Synth {
                 }
             }
         }
-        self.log();
+        // self.log();
     }
 
     fn transform_freq(freq: f64, midi_interval: i8, interval_table: &[f64]) -> Option<f64> {
@@ -127,12 +127,14 @@ impl Synth {
     pub fn play(&mut self, note: u8, velocity: u8) {
         match self.mode {
             Anchored => {
-                let interval = (note - self.last_note) as i8;
+                let note = note as i8;
+                let last_note = self.last_note as i8;
+                let interval = note - last_note;
 
                 if let Some(freq) =
                     Self::transform_freq(self.last_freq, interval, &TABLES[self.table])
                 {
-                    self.play_note_with_freq_and_vol(note, freq, velocity);
+                    self.play_note_with_freq_and_vol(note as u8, freq, velocity);
                 }
             }
             Fluid => {
@@ -156,20 +158,20 @@ impl Synth {
             }
         }
 
-        self.log();
+        // self.log();
     }
 
-    fn log(&self) {
-        println!("Fundamental: {} - {}", self.last_note, self.last_freq);
-        println!("Currently active voices:");
-        for (note, osc) in &self.voices {
-            if !osc.enabled {
-                continue;
-            }
-
-            println!("{note}: {}", osc.freq());
-        }
-    }
+    // fn log(&self) {
+    //     println!("Fundamental: {} - {}", self.last_note, self.last_freq);
+    //     println!("Currently active voices:");
+    //     for (note, osc) in &self.voices {
+    //         if !osc.enabled {
+    //             continue;
+    //         }
+    //
+    //         println!("{note}: {}", osc.freq());
+    //     }
+    // }
 
     pub fn silence(&mut self, note: u8) {
         if let Some(voice) = self.voices.get_mut(&note) {

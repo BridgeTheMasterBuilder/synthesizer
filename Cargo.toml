@@ -11,8 +11,10 @@ anyhow = "1.0.69"
 bpaf = { version = "0.7.8", features = ["derive"] }
 tables = { path = "tables" }
 
+[dev-dependencies]
+realfft = "3.2.0"
+#wav = "0.6.0"
+
 [build-dependencies]
 anyhow = "1.0.69"
-# num-rational = "0.4.1"
-# num-traits = "0.2.15"
 tables = { path = "tables" }

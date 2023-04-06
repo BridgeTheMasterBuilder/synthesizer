@@ -1,9 +1,9 @@
 use alsa::direct::pcm::MmapPlayback;
 use alsa::poll::poll;
-#[cfg(not(test))]
-use alsa::seq::Event;
 use alsa::Direction;
 use alsa::PollDescriptors;
+// #[cfg(not(test))]
+use alsa::seq::Event;
 use anyhow::Result;
 
 use crate::midi::MidiInputStream;

@@ -7,12 +7,12 @@ use crate::hw::IO;
 use crate::synth::Synth;
 
 mod envelope;
-mod hw;
+pub mod hw;
 mod lfo;
 mod midi;
 mod oscillator;
 mod pcm;
-mod synth;
+pub mod synth;
 mod tables;
 
 #[derive(Bpaf)]
