@@ -8,6 +8,7 @@ factors = [3, 5, 7, 11, 13, 17, 19, 23, 29, 31]
 category_names = ['Unison', 'Minor 2nd', 'Major 2nd', 'Minor 3rd', 'Major 3rd', 'Perfect 4th', 'Augmented 4th',
                   'Perfect 5th', 'Minor 6th', 'Major 6th', 'Minor 7th', 'Major 7th']
 
+interval_map = dict()
 
 def powerset(L):
     result = [[]]
@@ -148,6 +149,12 @@ for factors in tunings:
     for idx, category in enumerate(categories):
         if len(category) != 0:
             interval = simplest_interval(category)
+
+            if interval not in interval_map:
+                interval_map[interval] = {frozenset(factors)}
+            else:
+                interval_map[interval].add(frozenset(factors))
+
             num, denom = interval.as_integer_ratio()
             tables.write(f'\t\t{num}.0/{denom}.0,\n')
             table.write(f'{category_names[idx]}: {interval} ({interval_to_cents(interval)})\n')
@@ -155,3 +162,15 @@ for factors in tunings:
     tables.write('\t],\n')
     table.write('\n')
 tables.write('];\n')
+
+for interval_entry in sorted(interval_map.items()):
+    interval, tunings = interval_entry
+    num, denom = interval.as_integer_ratio()
+    if num != 0 and interval != unison:
+        print(f'{num:4}/{denom:<4} - {interval_to_cents(interval):18}', end=' - ')
+        for tuning in tunings:
+            print('{', end=' ')
+            for factor in tuning:
+                print(factor, end=' ')
+            print('}', end=' ')
+        print()
