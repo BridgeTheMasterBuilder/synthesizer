@@ -7,6 +7,7 @@ use crate::hw::IO;
 use crate::synth::Synth;
 
 mod envelope;
+pub mod file;
 pub mod hw;
 mod lfo;
 mod midi;
@@ -23,15 +24,6 @@ pub struct Options {
     #[bpaf(short('a'), long, argument)]
     pub aux_port: i32,
 }
-// #[cfg(test)]
-// mod tests {
-//     use crate::hw::open_midi_device;
-//
-//     #[test]
-//     fn f() {
-//         open_midi_device();
-//     }
-// }
 
 pub fn run(options: Options) -> Result<()> {
     let main_port = options.main_port;

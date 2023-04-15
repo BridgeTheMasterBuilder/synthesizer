@@ -7,11 +7,13 @@ use crate::oscillator::TriangleOscillator;
 use crate::synth::Mode::{Anchored, Fluid};
 use crate::tables::TABLES;
 
+#[derive(Clone)]
 enum Mode {
     Anchored,
     Fluid,
 }
 
+#[derive(Clone)]
 pub struct Synth {
     voices: BTreeMap<u8, TriangleOscillator>,
     active_voices: BTreeSet<u8>,

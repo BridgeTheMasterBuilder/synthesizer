@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Envelope {
     target: i16,
     vol: i16,

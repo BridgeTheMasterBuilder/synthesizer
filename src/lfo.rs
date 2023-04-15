@@ -2,7 +2,7 @@ use std::f64::consts::TAU;
 
 use crate::hw::SAMPLE_RATE;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Lfo {
     freq: f64,
     phase: f64,

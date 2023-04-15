@@ -4,7 +4,7 @@ use crate::envelope::Envelope;
 use crate::hw::SAMPLE_RATE;
 use crate::lfo::Lfo;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TriangleOscillator {
     pub enabled: bool,
     freq: f64,
