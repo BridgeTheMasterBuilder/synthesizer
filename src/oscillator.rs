@@ -42,8 +42,6 @@ impl TriangleOscillator {
     }
 
     pub fn set_vol(&mut self, vol: i16) {
-        self.enabled = true;
-
         self.env.set_volume(vol);
     }
 
@@ -74,8 +72,6 @@ impl TriangleOscillator {
         }
 
         self.buffer.replace(sample as i16);
-
-        self.enabled = self.env.volume() != 0.0;
 
         sample as i16
     }

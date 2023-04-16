@@ -58,7 +58,7 @@ impl Synth {
         let normalized_base = note + 12;
         let interval = (normalized_base - 60) as i8;
 
-        if let Some(freq) = Self::transform_freq(264.0, interval, &TABLES[PYTHAGOREAN as usize]) {
+        if let Some(freq) = Self::transform_freq(264.0, interval, &TABLES[self.table]) {
             self.last_note = normalized_base;
             self.last_freq = freq;
             self.retune();
@@ -81,7 +81,7 @@ impl Synth {
             for note in &self.active_voices {
                 let oscillator = self.voices.get_mut(note).unwrap();
 
-                let interval = (note - current_note) as i8;
+                let interval = *note as i8 - current_note as i8;
 
                 if let Some(freq) = Self::transform_freq(base_freq, interval, &TABLES[self.table]) {
                     oscillator.set_freq(freq);
@@ -106,9 +106,10 @@ impl Synth {
     }
 
     fn play_note_with_freq_and_vol(&mut self, note: u8, freq: f64, vol: u8) {
-        let vol = vol as i16 * 8;
+        let vol = vol as i16;
 
         if let Some(oscillator) = self.voices.get_mut(&note) {
+            oscillator.enabled = true;
             oscillator.set_freq(freq);
             oscillator.set_vol(vol);
         } else {
@@ -162,7 +163,7 @@ impl Synth {
 
         // self.log();
     }
-
+    //
     // fn log(&self) {
     //     println!("Fundamental: {} - {}", self.last_note, self.last_freq);
     //     println!("Currently active voices:");
@@ -177,6 +178,7 @@ impl Synth {
 
     pub fn silence(&mut self, note: u8) {
         if let Some(voice) = self.voices.get_mut(&note) {
+            voice.enabled = false;
             voice.set_vol(0);
         };
 

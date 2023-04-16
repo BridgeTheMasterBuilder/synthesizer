@@ -8,13 +8,14 @@ pub struct Envelope {
 
 impl Envelope {
     const DELAY: u8 = 16;
+    const INCR: i16 = 64;
 
     pub fn new(vol: i16) -> Self {
         Self {
-            target: vol,
-            vol: 1,
-            incr: 1,
-            delay: Self::DELAY,
+            target: vol * 128,
+            vol: 0,
+            incr: Self::INCR,
+            delay: 0,
         }
     }
 
@@ -24,22 +25,21 @@ impl Envelope {
         } else {
             self.delay = Self::DELAY;
 
-            self.vol += if self.target == 0 {
-                -self.incr
+            // TODO
+            self.vol = if self.vol > self.target {
+                (self.vol as u16).saturating_sub(self.incr as u16) as i16
             } else if self.vol < self.target {
-                self.incr
+                self.vol.saturating_add(self.incr)
             } else {
-                0
+                self.vol
             };
         }
     }
 
     pub fn set_volume(&mut self, vol: i16) {
-        self.target = vol;
-        if self.vol == 0 {
-            self.vol = 1;
-        }
-        self.incr = 1;
+        self.target = vol * 128;
+
+        self.incr = Self::INCR;
     }
 
     pub fn volume(&self) -> f64 {
