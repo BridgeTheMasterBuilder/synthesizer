@@ -20,7 +20,11 @@ fn cent_difference(f1: f64, f2: f64) -> f64 {
     (f64::log2(f1 / f2) * 1200.0).abs()
 }
 
-fn determine_n_strongest_frequencies(synth: &mut Synth, n: usize) -> Vec<f64> {
+fn determine_n_strongest_frequencies(
+    synth: &mut Synth,
+    n: usize,
+    filename_suffix: &str,
+) -> Vec<f64> {
     fn tuple_swap<T, U>((a, b): (T, U)) -> (U, T) {
         (b, a)
     }
@@ -32,9 +36,11 @@ fn determine_n_strongest_frequencies(synth: &mut Synth, n: usize) -> Vec<f64> {
     let mut planner = FftPlanner::<f64>::new();
     let fft = planner.plan_fft_forward(fft_size);
 
-    let mut spectrum: Vec<Complex<f64>> = synth
+    let buffer: Vec<i16> = synth.into_iter().take(fft_size).collect();
+
+    let mut spectrum: Vec<Complex<f64>> = buffer
+        .clone()
         .into_iter()
-        .take(fft_size)
         .map(|sample| Complex {
             re: sample as f64,
             im: 0.0,
@@ -72,6 +78,11 @@ fn determine_n_strongest_frequencies(synth: &mut Synth, n: usize) -> Vec<f64> {
 
     amplitudes.sort_by(|f1, f2| f1.partial_cmp(f2).unwrap());
 
+    let mut filename = format!("test_artifacts/{n}_intervals");
+    filename.push_str(filename_suffix);
+
+    render_to_file(&filename, buffer);
+
     amplitudes
 }
 
@@ -80,6 +91,7 @@ fn test_inexact_n(
     intervals: &[(u8, f64, f64)],
     factors: &[u8],
     tolerance: f64,
+    volume: u8,
 ) {
     let mut synth = Synth::new();
 
@@ -87,14 +99,22 @@ fn test_inexact_n(
         synth.change_tuning(factor);
     }
 
-    synth.play(midi_note, 127);
+    synth.play(midi_note, volume);
 
     for &(midi_interval, _, _) in intervals {
-        synth.play(midi_note + midi_interval, 127);
+        synth.play(midi_note + midi_interval, volume);
+    }
+
+    let mut filename_suffix = String::new();
+
+    filename_suffix.push_str(&format!("_1({freq})"));
+
+    for &(interval, num, denom) in intervals {
+        filename_suffix.push_str(&format!("_{interval}({num}_{denom}).wav"));
     }
 
     let n = intervals.len() + 1;
-    let fundamentals = determine_n_strongest_frequencies(&mut synth, n);
+    let fundamentals = determine_n_strongest_frequencies(&mut synth, n, &filename_suffix);
 
     assert_eq!(fundamentals[0], freq);
     for (i, &(_, num, denom)) in intervals.into_iter().enumerate() {
@@ -107,7 +127,7 @@ fn test_inexact_n(
 }
 
 fn test_inexact_1(fundamental: (u8, f64), tolerance: f64) {
-    test_inexact_n(fundamental, &[], &[], tolerance);
+    test_inexact_n(fundamental, &[], &[], tolerance, 127);
 }
 
 fn test_inexact_2(
@@ -116,7 +136,58 @@ fn test_inexact_2(
     factors: &[u8],
     tolerance: f64,
 ) {
-    test_inexact_n(fundamental, &[interval], factors, tolerance);
+    test_inexact_n(fundamental, &[interval], factors, tolerance, 127);
+}
+
+fn test_inexact_3(
+    fundamental: (u8, f64),
+    interval1: (u8, f64, f64),
+    interval2: (u8, f64, f64),
+    factors: &[u8],
+    tolerance: f64,
+) {
+    test_inexact_n(
+        fundamental,
+        &[interval1, interval2],
+        factors,
+        tolerance,
+        127,
+    );
+}
+
+fn test_inexact_4(
+    fundamental: (u8, f64),
+    interval1: (u8, f64, f64),
+    interval2: (u8, f64, f64),
+    interval3: (u8, f64, f64),
+    factors: &[u8],
+    tolerance: f64,
+) {
+    test_inexact_n(
+        fundamental,
+        &[interval1, interval2, interval3],
+        factors,
+        tolerance,
+        64,
+    );
+}
+
+fn test_inexact_5(
+    fundamental: (u8, f64),
+    interval1: (u8, f64, f64),
+    interval2: (u8, f64, f64),
+    interval3: (u8, f64, f64),
+    interval4: (u8, f64, f64),
+    factors: &[u8],
+    tolerance: f64,
+) {
+    test_inexact_n(
+        fundamental,
+        &[interval1, interval2, interval3, interval4],
+        factors,
+        tolerance,
+        64,
+    );
 }
 
 mod basic {
@@ -126,7 +197,7 @@ mod basic {
     fn test_no_notes() {
         let mut synth = Synth::new();
 
-        let fundamentals = determine_n_strongest_frequencies(&mut synth, 1);
+        let fundamentals = determine_n_strongest_frequencies(&mut synth, 1, "_no_notes.wav");
 
         assert_eq!(fundamentals.len(), 0);
     }
@@ -134,6 +205,30 @@ mod basic {
     #[test]
     fn test_c_264() {
         test_inexact_1((60, 264.0), TOLERANCE);
+    }
+
+    #[test]
+    fn test_oscillator_stability() {
+        let mut synth = Synth::new();
+        synth.play(60, 127);
+
+        let a = &mut synth;
+        let _ = a.into_iter().take(SAMPLE_RATE as usize * 2 * 60 * 60 * 24);
+
+        let fundamentals =
+            determine_n_strongest_frequencies(&mut synth, 1, "_oscillator_stability.wav");
+
+        assert_eq!(fundamentals[0], 264.0);
+    }
+
+    #[test]
+    fn test_c_4186_01() {
+        test_inexact_1((108, 4224.0), TOLERANCE);
+    }
+
+    #[test]
+    fn test_a_27_5() {
+        test_inexact_1((21, 27.84375), TOLERANCE);
     }
 }
 
@@ -145,7 +240,7 @@ mod volume {
         let mut synth = Synth::new();
         synth.play(60, 0);
 
-        let fundamentals = determine_n_strongest_frequencies(&mut synth, 1);
+        let fundamentals = determine_n_strongest_frequencies(&mut synth, 1, "_silent.wav");
 
         assert_eq!(fundamentals.len(), 0);
     }
@@ -155,7 +250,7 @@ mod volume {
         let mut synth = Synth::new();
         synth.play(60, 1);
 
-        let fundamentals = determine_n_strongest_frequencies(&mut synth, 1);
+        let fundamentals = determine_n_strongest_frequencies(&mut synth, 1, "_almost_silent.wav");
 
         assert_eq!(fundamentals[0], 264.0);
     }
@@ -177,7 +272,7 @@ mod volume {
 
         first.append(&mut second);
 
-        render_to_file("envelope_test.wav", first);
+        render_to_file("test_artifacts/envelope_test.wav", first);
     }
 
     #[test]
@@ -196,11 +291,11 @@ mod volume {
         let mut second: Vec<i16> = b.into_iter().take(SAMPLE_RATE as usize * 2).collect();
 
         first.append(&mut second);
-        render_to_file("envelope_test_change_volume.wav", first);
+        render_to_file("test_artifacts/envelope_test_change_volume.wav", first);
     }
 }
 
-mod fundamental {
+mod tuning {
     use super::*;
 
     #[test]
@@ -210,22 +305,41 @@ mod fundamental {
 
         synth.change_fundamental(60 - 12);
 
-        let fundamentals = determine_n_strongest_frequencies(&mut synth, 1);
+        let fundamentals =
+            determine_n_strongest_frequencies(&mut synth, 1, "_change_fundamental_identity.wav");
 
         assert_eq!(fundamentals[0], 264.0);
     }
 
-    // #[test]
-    // fn test_change_fundamental_pythagorean() {
-    //     let mut synth = Synth::new();
-    //     synth.play(60, 127);
-    //
-    //     synth.change_fundamental(66 - 12);
-    //
-    //     let fundamentals = determine_n_strongest_frequencies(&mut synth, 1);
-    //
-    //     assert_eq!(fundamentals[0], 264.0);
-    // }
+    #[test]
+    fn test_change_fundamental_retunes_note() {
+        let mut synth = Synth::new();
+        synth.change_tuning(64);
+
+        synth.play(70, 127);
+
+        let fundamentals = determine_n_strongest_frequencies(
+            &mut synth,
+            1,
+            "_change_fundamental_retunes_note_before",
+        );
+
+        assert!(
+            cent_difference(fundamentals[0], 475.2) < TOLERANCE,
+            "{}",
+            cent_difference(fundamentals[0], 475.2)
+        );
+
+        synth.change_fundamental(59 - 12);
+
+        let fundamentals = determine_n_strongest_frequencies(
+            &mut synth,
+            1,
+            "_change_fundamental_retunes_note_after",
+        );
+
+        assert_eq!(fundamentals[0], 464.0625);
+    }
 }
 
 mod dyads {
@@ -391,12 +505,6 @@ mod dyads {
     fn test_7_5() {
         test_inexact_2((60, 264.0), (6, 7.0, 5.0), &[64, 69], TOLERANCE);
     }
-
-    // This test leads to OOM condition, unfortunately
-    // #[test]
-    // fn test_729_512() {
-    //     test_inexact_2((60, 264.0), 6, &[64, 67], 0.000125, 375.890625);
-    // }
 
     #[test]
     fn test_729_512() {
@@ -565,8 +673,341 @@ mod dyads {
         synth.change_tuning(67);
         synth.play(61, 127);
 
-        let fundamentals = determine_n_strongest_frequencies(&mut synth, 1);
+        let fundamentals = determine_n_strongest_frequencies(&mut synth, 1, "_empty_interval");
 
         assert_eq!(fundamentals.len(), 0);
+    }
+
+    #[test]
+    fn test_descending_interval() {
+        let mut synth = Synth::new();
+
+        synth.play(60, 127);
+        synth.play(55, 127);
+
+        let fundamentals = determine_n_strongest_frequencies(&mut synth, 2, "_descending_interval");
+
+        assert_eq!(fundamentals[0], 198.0);
+        assert_eq!(fundamentals[1], 264.0);
+    }
+}
+
+mod triads {
+    use super::*;
+
+    #[test]
+    fn test_major_triad() {
+        test_inexact_3((60, 264.0), (4, 5.0, 4.0), (7, 3.0, 2.0), &[64], TOLERANCE);
+    }
+
+    #[test]
+    fn test_minor_triad() {
+        test_inexact_3((60, 264.0), (3, 6.0, 5.0), (7, 3.0, 2.0), &[64], TOLERANCE);
+    }
+
+    #[test]
+    fn test_diminished_triad() {
+        test_inexact_3(
+            (59, 247.5),
+            (3, 6.0, 5.0),
+            (6, 64.0, 45.0),
+            &[64],
+            TOLERANCE,
+        );
+    }
+
+    #[test]
+    fn test_augmented_triad() {
+        test_inexact_3(
+            (60, 264.0),
+            (4, 5.0, 4.0),
+            (8, 8.0, 5.0),
+            &[64, 67],
+            TOLERANCE,
+        );
+    }
+}
+
+mod tetrads {
+    use super::*;
+
+    #[test]
+    fn test_major_seventh() {
+        test_inexact_4(
+            (60, 264.0),
+            (4, 5.0, 4.0),
+            (7, 3.0, 2.0),
+            (11, 15.0, 8.0),
+            &[64],
+            TOLERANCE,
+        );
+    }
+
+    #[test]
+    fn test_dominant_seventh() {
+        test_inexact_4(
+            (60, 264.0),
+            (4, 5.0, 4.0),
+            (7, 3.0, 2.0),
+            (10, 7.0, 4.0),
+            &[64, 69],
+            TOLERANCE,
+        );
+    }
+
+    #[test]
+    fn test_min_maj_seventh() {
+        test_inexact_4(
+            (60, 264.0),
+            (3, 6.0, 5.0),
+            (7, 3.0, 2.0),
+            (11, 15.0, 8.0),
+            &[64],
+            TOLERANCE,
+        );
+    }
+
+    #[test]
+    fn test_minor_seventh() {
+        test_inexact_4(
+            (60, 264.0),
+            (3, 6.0, 5.0),
+            (7, 3.0, 2.0),
+            (10, 9.0, 5.0),
+            &[64],
+            TOLERANCE,
+        );
+    }
+
+    #[test]
+    fn test_septimal_minor_seventh() {
+        test_inexact_4(
+            (60, 264.0),
+            (3, 7.0, 6.0),
+            (7, 3.0, 2.0),
+            (10, 7.0, 4.0),
+            &[69],
+            TOLERANCE,
+        );
+    }
+
+    #[test]
+    fn test_septimal_french_sixth_chord() {
+        test_inexact_4(
+            (60, 264.0),
+            (4, 5.0, 4.0),
+            (6, 7.0, 5.0),
+            (10, 7.0, 4.0),
+            &[64, 69],
+            TOLERANCE,
+        );
+    }
+
+    #[test]
+    fn test_half_diminished_chord() {
+        test_inexact_4(
+            (60, 264.0),
+            (3, 6.0, 5.0),
+            (6, 25.0, 18.0),
+            (10, 9.0, 5.0),
+            &[64],
+            TOLERANCE,
+        );
+    }
+
+    #[test]
+    fn test_septimal_half_diminished_chord() {
+        test_inexact_4(
+            (60, 264.0),
+            (3, 6.0, 5.0),
+            (6, 7.0, 5.0),
+            (10, 7.0, 4.0),
+            &[64, 69],
+            TOLERANCE,
+        );
+    }
+
+    #[test]
+    fn test_major_ninth() {
+        test_inexact_5(
+            (60, 264.0),
+            (4, 5.0, 4.0),
+            (7, 3.0, 2.0),
+            (11, 15.0, 8.0),
+            (14, 9.0, 4.0),
+            &[64],
+            TOLERANCE,
+        );
+    }
+
+    #[test]
+    fn test_minor_ninth() {
+        test_inexact_5(
+            (60, 264.0),
+            (3, 6.0, 5.0),
+            (7, 3.0, 2.0),
+            (10, 9.0, 5.0),
+            (14, 9.0, 4.0),
+            &[64],
+            TOLERANCE,
+        );
+    }
+
+    #[test]
+    fn test_septimal_minor_ninth() {
+        test_inexact_5(
+            (60, 264.0),
+            (3, 7.0, 6.0),
+            (7, 3.0, 2.0),
+            (10, 7.0, 4.0),
+            (14, 16.0, 7.0),
+            &[69],
+            TOLERANCE,
+        );
+    }
+}
+
+mod vibrato {
+    use rustfft::num_traits::Float;
+
+    use super::*;
+
+    #[test]
+    fn test_extremely_slow_vibrato() {
+        let mut synth = Synth::new();
+
+        synth.play(84, 127);
+        synth.set_vibrato(f64::min_positive_value());
+
+        let buffer: Vec<i16> = synth
+            .into_iter()
+            .take(SAMPLE_RATE as usize * 2 * 10)
+            .collect();
+
+        render_to_file("test_artifacts/test_slow_vibrato.wav", buffer);
+    }
+
+    #[test]
+    fn test_very_slow_vibrato() {
+        let mut synth = Synth::new();
+
+        synth.play(84, 127);
+        synth.set_vibrato(0.001);
+
+        let buffer: Vec<i16> = synth
+            .into_iter()
+            .take(SAMPLE_RATE as usize * 2 * 60 * 5)
+            .collect();
+
+        render_to_file("test_artifacts/test_very_slow_vibrato.wav", buffer);
+    }
+
+    #[test]
+    fn test_slow_vibrato() {
+        let mut synth = Synth::new();
+
+        synth.play(84, 127);
+        synth.set_vibrato(1.0);
+
+        let buffer: Vec<i16> = synth
+            .into_iter()
+            .take(SAMPLE_RATE as usize * 2 * 10)
+            .collect();
+
+        render_to_file("test_artifacts/test_slow_vibrato.wav", buffer);
+    }
+
+    #[test]
+    fn test_normal_vibrato() {
+        let mut synth = Synth::new();
+
+        synth.play(84, 127);
+        synth.set_vibrato(6.0);
+
+        let buffer: Vec<i16> = synth
+            .into_iter()
+            .take(SAMPLE_RATE as usize * 2 * 10)
+            .collect();
+
+        render_to_file("test_artifacts/test_normal_vibrato.wav", buffer);
+    }
+
+    // TODO
+    #[test]
+    fn test_fast_vibrato() {
+        let mut synth = Synth::new();
+
+        synth.play(84, 127);
+        synth.set_vibrato(120.0);
+
+        let buffer: Vec<i16> = synth
+            .into_iter()
+            .take(SAMPLE_RATE as usize * 2 * 10)
+            .collect();
+
+        render_to_file("test_artifacts/test_fast_vibrato.wav", buffer);
+    }
+
+    // TODO
+    #[test]
+    fn test_very_fast_vibrato() {
+        let mut synth = Synth::new();
+
+        synth.play(84, 127);
+        synth.set_vibrato(1000.0);
+
+        let buffer: Vec<i16> = synth
+            .into_iter()
+            .take(SAMPLE_RATE as usize * 2 * 10)
+            .collect();
+
+        render_to_file("test_artifacts/test_very_fast_vibrato.wav", buffer);
+    }
+
+    // TODO
+    #[test]
+    fn test_extremely_fast_vibrato() {
+        let mut synth = Synth::new();
+
+        synth.play(84, 127);
+        synth.set_vibrato(f64::max_value());
+
+        let buffer: Vec<i16> = synth
+            .into_iter()
+            .take(SAMPLE_RATE as usize * 2 * 10)
+            .collect();
+
+        render_to_file("test_artifacts/test_extremely_fast_vibrato.wav", buffer);
+    }
+
+    #[test]
+    fn test_vibrato_identity() {
+        let mut synth = Synth::new();
+
+        synth.play(60, 127);
+        synth.set_vibrato(0.0);
+
+        let fundamentals = determine_n_strongest_frequencies(&mut synth, 1, "_vibrato_identity");
+
+        assert_eq!(fundamentals[0], 264.0);
+    }
+
+    // TODO
+    #[test]
+    fn test_enable_disable_vibrato_identity() {
+        let mut synth = Synth::new();
+
+        synth.play(60, 127);
+        synth.set_vibrato(6.0);
+
+        let a = &mut synth;
+
+        let _: Vec<i16> = a.into_iter().take(31298).collect();
+        synth.set_vibrato(0.0);
+
+        let fundamentals =
+            determine_n_strongest_frequencies(&mut synth, 1, "_enable_disable_vibrato_identity");
+
+        assert_eq!(fundamentals[0], 264.0);
     }
 }
