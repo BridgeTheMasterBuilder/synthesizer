@@ -28,10 +28,6 @@ impl TriangleOscillator {
         }
     }
 
-    pub fn freq(&self) -> f64 {
-        self.freq
-    }
-
     pub fn set_freq(&mut self, freq: f64) {
         self.freq = freq;
         self.phase_incr = freq / SAMPLE_RATE as f64;

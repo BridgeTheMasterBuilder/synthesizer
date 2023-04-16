@@ -4,14 +4,7 @@ use tables::PYTHAGOREAN;
 
 use crate::hw::SF;
 use crate::oscillator::TriangleOscillator;
-use crate::synth::Mode::{Anchored, Fluid};
 use crate::tables::TABLES;
-
-#[derive(Clone)]
-enum Mode {
-    Anchored,
-    Fluid,
-}
 
 #[derive(Clone)]
 pub struct Synth {
@@ -20,7 +13,6 @@ pub struct Synth {
     table: usize,
     last_note: u8,
     last_freq: f64,
-    mode: Mode,
 }
 
 impl Synth {
@@ -31,7 +23,6 @@ impl Synth {
             table: PYTHAGOREAN as usize,
             last_note: 60,
             last_freq: 264.0,
-            mode: Anchored,
         }
     }
 
@@ -55,11 +46,11 @@ impl Synth {
     }
 
     pub fn change_fundamental(&mut self, note: u8) {
-        let normalized_base = note + 12;
-        let interval = (normalized_base - 60) as i8;
+        let normalized_base = (note + 12) as i8;
+        let interval = normalized_base - 60;
 
         if let Some(freq) = Self::transform_freq(264.0, interval, &TABLES[self.table]) {
-            self.last_note = normalized_base;
+            self.last_note = normalized_base as u8;
             self.last_freq = freq;
             self.retune();
         }
@@ -68,15 +59,7 @@ impl Synth {
 
     fn retune(&mut self) {
         if !self.active_voices.is_empty() {
-            let (base_freq, current_note) = match self.mode {
-                Anchored => (self.last_freq, self.last_note),
-                Fluid => {
-                    let current_note = self.active_voices.first().unwrap();
-                    let base_freq = self.voices.get(current_note).unwrap().freq();
-
-                    (base_freq, *current_note)
-                }
-            };
+            let (base_freq, current_note) = (self.last_freq, self.last_note);
 
             for note in &self.active_voices {
                 let oscillator = self.voices.get_mut(note).unwrap();
@@ -128,39 +111,13 @@ impl Synth {
     }
 
     pub fn play(&mut self, note: u8, velocity: u8) {
-        match self.mode {
-            Anchored => {
-                let note = note as i8;
-                let last_note = self.last_note as i8;
-                let interval = note - last_note;
+        let note = note as i8;
+        let last_note = self.last_note as i8;
+        let interval = note - last_note;
 
-                if let Some(freq) =
-                    Self::transform_freq(self.last_freq, interval, &TABLES[self.table])
-                {
-                    self.play_note_with_freq_and_vol(note as u8, freq, velocity);
-                }
-            }
-            Fluid => {
-                let lowest_voice = self.active_voices.first();
-
-                let (base_freq, current_note) =
-                    lowest_voice.map_or((self.last_freq, self.last_note), |note| {
-                        let voice = self.voices.get(note).unwrap();
-
-                        (voice.freq(), *note)
-                    });
-
-                let interval = (note - current_note) as i8;
-
-                if let Some(freq) = Self::transform_freq(base_freq, interval, &TABLES[self.table]) {
-                    self.play_note_with_freq_and_vol(note, freq, velocity);
-
-                    self.last_note = note;
-                    self.last_freq = freq;
-                }
-            }
+        if let Some(freq) = Self::transform_freq(self.last_freq, interval, &TABLES[self.table]) {
+            self.play_note_with_freq_and_vol(note as u8, freq, velocity);
         }
-
         // self.log();
     }
     //
