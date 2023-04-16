@@ -189,11 +189,11 @@ impl Synth {
 impl Iterator for Synth {
     type Item = SF;
     fn next(&mut self) -> Option<Self::Item> {
-        let sum = self
+        let sum: i16 = self
             .voices
             .values_mut()
             .filter(|voice| voice.enabled)
-            .fold(0, |sum, sample| sum + sample.output());
+            .fold(0, |sum, sample| sum.saturating_add(sample.output()));
 
         let sample = sum;
 
