@@ -29,7 +29,6 @@ impl Envelope {
 
             let old_vol = self.vol;
 
-            // TODO
             self.vol = if self.vol > self.target {
                 self.vol.saturating_sub(self.incr)
             } else if self.vol + self.incr < self.target {

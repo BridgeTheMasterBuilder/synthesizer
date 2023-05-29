@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use ::alsa::seq::EventType;
 use alsa::seq::{EvCtrl, EvNote};
 use anyhow::Result;
@@ -33,6 +35,9 @@ pub fn run(options: Options) -> Result<()> {
     let mut synth = Synth::new();
 
     let mut collecting = false;
+    let mut sustain = false;
+
+    let mut sustained_notes = BTreeSet::new();
 
     loop {
         io.write(&mut synth)?;
@@ -49,6 +54,9 @@ pub fn run(options: Options) -> Result<()> {
                                 }
                                 _ => (),
                             },
+                            1 if sustain => {
+                                sustained_notes.insert(note);
+                            }
                             1 => synth.silence(note),
                             _ => unreachable!(),
                         }
@@ -73,7 +81,10 @@ pub fn run(options: Options) -> Result<()> {
                                 }
                                 _ => (),
                             },
-                            1 => synth.play(note, velocity),
+                            1 => {
+                                sustained_notes.remove(&note);
+                                synth.play(note, velocity);
+                            }
                             _ => unreachable!(),
                         }
                     }
@@ -83,10 +94,21 @@ pub fn run(options: Options) -> Result<()> {
                         param: 64, value, ..
                     }) = event.get_data()
                     {
+                        // if value > 0 {
+                        //     synth.set_vibrato(5.0)
+                        // } else {
+                        //     synth.set_vibrato(0.0)
+                        // }
                         if value > 0 {
-                            synth.set_vibrato(5.0)
+                            sustain = true;
+
+                            for &note in &sustained_notes {
+                                synth.silence(note);
+                            }
+
+                            sustained_notes.clear();
                         } else {
-                            synth.set_vibrato(0.0)
+                            sustain = false;
                         }
                     }
                 }
