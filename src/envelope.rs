@@ -1,16 +1,16 @@
 #[derive(Clone, Debug)]
 pub struct Envelope {
-    target: i16,
-    vol: i16,
-    incr: i16,
+    target: u16,
+    vol: u16,
+    incr: u16,
     delay: u8,
 }
 
 impl Envelope {
     const DELAY: u8 = 16;
-    const INCR: i16 = 64;
+    const INCR: u16 = 64;
 
-    pub fn new(vol: i16) -> Self {
+    pub fn new(vol: u16) -> Self {
         Self {
             target: vol * 128,
             vol: 0,
@@ -19,24 +19,30 @@ impl Envelope {
         }
     }
 
-    pub fn adjust_volume(&mut self) {
+    pub fn adjust_volume(&mut self) -> bool {
         if self.delay > 0 {
             self.delay -= 1;
+
+            false
         } else {
             self.delay = Self::DELAY;
 
+            let old_vol = self.vol;
+
             // TODO
             self.vol = if self.vol > self.target {
-                (self.vol as u16).saturating_sub(self.incr as u16) as i16
-            } else if self.vol < self.target {
-                self.vol.saturating_add(self.incr)
+                self.vol.saturating_sub(self.incr)
+            } else if self.vol + self.incr < self.target {
+                self.vol + self.incr
             } else {
-                self.vol
+                self.target
             };
+
+            self.vol == 0 && old_vol != 0
         }
     }
 
-    pub fn set_volume(&mut self, vol: i16) {
+    pub fn set_volume(&mut self, vol: u16) {
         self.target = vol * 128;
 
         self.incr = Self::INCR;

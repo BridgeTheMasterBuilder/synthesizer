@@ -16,7 +16,7 @@ pub struct TriangleOscillator {
 }
 
 impl TriangleOscillator {
-    pub fn new(freq: f64, vol: i16) -> Self {
+    pub fn new(freq: f64, vol: u16) -> Self {
         Self {
             enabled: true,
             freq,
@@ -28,6 +28,10 @@ impl TriangleOscillator {
         }
     }
 
+    pub fn freq(&self) -> f64 {
+        self.freq
+    }
+
     pub fn set_freq(&mut self, freq: f64) {
         self.freq = freq;
         self.phase_incr = freq / SAMPLE_RATE as f64;
@@ -37,7 +41,7 @@ impl TriangleOscillator {
         self.phase_incr = freq / SAMPLE_RATE as f64;
     }
 
-    pub fn set_vol(&mut self, vol: i16) {
+    pub fn set_vol(&mut self, vol: u16) {
         self.env.set_volume(vol);
     }
 
@@ -59,7 +63,7 @@ impl TriangleOscillator {
 
         self.adjust_vibrato(new_freq);
 
-        self.env.adjust_volume();
+        self.enabled = !self.env.adjust_volume();
 
         self.phase += self.phase_incr;
 

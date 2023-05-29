@@ -54,7 +54,7 @@ impl Synth {
             self.last_freq = freq;
             self.retune();
         }
-        // self.log();
+        self.log();
     }
 
     fn retune(&mut self) {
@@ -89,7 +89,7 @@ impl Synth {
     }
 
     fn play_note_with_freq_and_vol(&mut self, note: u8, freq: f64, vol: u8) {
-        let vol = vol as i16;
+        let vol = vol as u16;
 
         if let Some(oscillator) = self.voices.get_mut(&note) {
             oscillator.enabled = true;
@@ -118,24 +118,24 @@ impl Synth {
         if let Some(freq) = Self::transform_freq(self.last_freq, interval, &TABLES[self.table]) {
             self.play_note_with_freq_and_vol(note as u8, freq, velocity);
         }
-        // self.log();
+        self.log();
     }
-    //
-    // fn log(&self) {
-    //     println!("Fundamental: {} - {}", self.last_note, self.last_freq);
-    //     println!("Currently active voices:");
-    //     for (note, osc) in &self.voices {
-    //         if !osc.enabled {
-    //             continue;
-    //         }
-    //
-    //         println!("{note}: {}", osc.freq());
-    //     }
-    // }
+
+    fn log(&self) {
+        println!("Fundamental: {} - {}", self.last_note, self.last_freq);
+        println!("Currently active voices:");
+        for (note, osc) in &self.voices {
+            if !osc.enabled {
+                continue;
+            }
+
+            println!("{note}: {}", osc.freq());
+        }
+    }
 
     pub fn silence(&mut self, note: u8) {
         if let Some(voice) = self.voices.get_mut(&note) {
-            voice.enabled = false;
+            // voice.enabled = false;
             voice.set_vol(0);
         };
 
