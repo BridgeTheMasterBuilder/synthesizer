@@ -25,13 +25,16 @@ pub struct Options {
     pub main_port: i32,
     #[bpaf(short('a'), long, argument)]
     pub aux_port: i32,
+    #[bpaf(short('c'), long, argument)]
+    pub card: String,
 }
 
 pub fn run(options: Options) -> Result<()> {
     let main_port = options.main_port;
     let aux_port = options.aux_port;
+    let card = options.card;
 
-    let mut io = IO::new(main_port, aux_port, "hw:0")?;
+    let mut io = IO::new(main_port, aux_port, &card)?;
     let mut synth = Synth::new();
 
     let mut collecting = false;
