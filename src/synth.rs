@@ -74,17 +74,22 @@ impl Synth {
         // self.log();
     }
 
-    fn transform_freq(freq: f64, midi_interval: i8, interval_table: &[f64]) -> Option<f64> {
-        let sign = midi_interval.signum();
+    fn transform_freq(mut freq: f64, mut midi_interval: i8, interval_table: &[f64]) -> Option<f64> {
+        while midi_interval < 0 {
+            midi_interval += 12;
+            freq /= 2.0;
+        }
+        // let sign = midi_interval.signum();
 
-        let interval = interval_table[midi_interval.unsigned_abs() as usize];
+        // let interval = interval_table[midi_interval.unsigned_abs() as usize];
+        let interval = interval_table[midi_interval as usize];
 
         if interval == 0.0 {
             None
-        } else if sign >= 0 {
-            Some(freq * interval)
+            // } else if sign >= 0 {
+            //     Some(freq * interval)
         } else {
-            Some(freq / interval)
+            Some(freq * interval)
         }
     }
 
