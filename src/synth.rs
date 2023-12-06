@@ -13,6 +13,8 @@ pub struct Synth {
     table: usize,
     last_note: u8,
     last_freq: f64,
+    volume: u8,
+    cutoff_vol: u8,
 }
 
 impl Synth {
@@ -23,6 +25,8 @@ impl Synth {
             table: PYTHAGOREAN as usize,
             last_note: 60,
             last_freq: 264.0,
+            volume: 0,
+            cutoff_vol: 1,
         }
     }
 
@@ -54,7 +58,7 @@ impl Synth {
             self.last_freq = freq;
             self.retune();
         }
-        self.log();
+        // self.log();
     }
 
     fn retune(&mut self) {
@@ -115,15 +119,23 @@ impl Synth {
         }
     }
 
-    pub fn play(&mut self, note: u8, velocity: u8) {
+    pub fn set_volume(&mut self, vol: u8) {
+        self.volume = if vol <= self.cutoff_vol { 0 } else { vol };
+        //
+        // for (_, voice) in &mut self.voices {
+        //     // TODO need to check if the voice is enabled
+        //     voice.set_vol(vol as u16);
+        // }
+    }
+    pub fn play(&mut self, note: u8) {
         let note = note as i8;
         let last_note = self.last_note as i8;
         let interval = note - last_note;
 
         if let Some(freq) = Self::transform_freq(self.last_freq, interval, &TABLES[self.table]) {
-            self.play_note_with_freq_and_vol(note as u8, freq, velocity);
+            self.play_note_with_freq_and_vol(note as u8, freq, self.cutoff_vol + 1);
         }
-        self.log();
+        // self.log();
     }
 
     fn log(&self) {
@@ -157,7 +169,8 @@ impl Iterator for Synth {
             .filter(|voice| voice.enabled)
             .fold(0, |sum, sample| sum.saturating_add(sample.output()));
 
-        let sample = sum;
+        let sample = sum * self.volume as i16;
+        // let sample = sum;
 
         Some(sample)
     }

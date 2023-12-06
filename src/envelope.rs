@@ -8,11 +8,12 @@ pub struct Envelope {
 
 impl Envelope {
     const DELAY: u8 = 16;
-    const INCR: u16 = 64;
+    const INCR: u16 = 1;
+    const GAIN: u16 = 32;
 
     pub fn new(vol: u16) -> Self {
         Self {
-            target: vol * 128,
+            target: vol * Self::GAIN,
             vol: 0,
             incr: Self::INCR,
             delay: 0,
@@ -42,7 +43,7 @@ impl Envelope {
     }
 
     pub fn set_volume(&mut self, vol: u16) {
-        self.target = vol * 128;
+        self.target = vol * Self::GAIN;
 
         self.incr = Self::INCR;
     }

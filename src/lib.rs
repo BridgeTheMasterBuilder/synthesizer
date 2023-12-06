@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use ::alsa::seq::EventType;
 use alsa::seq::{EvCtrl, EvNote};
 use anyhow::Result;
@@ -25,6 +23,8 @@ pub struct Options {
     pub main_port: i32,
     #[bpaf(short('a'), long, argument)]
     pub aux_port: i32,
+    #[bpaf(short('e'), long, argument)]
+    pub expr_port: i32,
     #[bpaf(short('c'), long, argument)]
     pub card: String,
 }
@@ -32,15 +32,16 @@ pub struct Options {
 pub fn run(options: Options) -> Result<()> {
     let main_port = options.main_port;
     let aux_port = options.aux_port;
+    let expr_port = options.expr_port;
     let card = options.card;
 
-    let mut io = IO::new(main_port, aux_port, &card)?;
+    let mut io = IO::new(main_port, aux_port, expr_port, &card)?;
     let mut synth = Synth::new();
 
     let mut collecting = false;
-    let mut sustain = false;
+    // let mut sustain = false;
 
-    let mut sustained_notes = BTreeSet::new();
+    // let mut sustained_notes = BTreeSet::new();
 
     loop {
         io.write(&mut synth)?;
@@ -57,22 +58,16 @@ pub fn run(options: Options) -> Result<()> {
                                 }
                                 _ => (),
                             },
-                            1 if sustain => {
-                                sustained_notes.insert(note);
-                            }
+                            // 1 if sustain => {
+                            //     sustained_notes.insert(note);
+                            // }
                             1 => synth.silence(note),
                             _ => unreachable!(),
                         }
                     }
                 }
                 EventType::Noteon => {
-                    if let Some(EvNote {
-                        channel,
-                        note,
-                        velocity,
-                        ..
-                    }) = event.get_data()
-                    {
+                    if let Some(EvNote { channel, note, .. }) = event.get_data() {
                         match channel {
                             0 => match note {
                                 48..=59 => {
@@ -85,8 +80,8 @@ pub fn run(options: Options) -> Result<()> {
                                 _ => (),
                             },
                             1 => {
-                                sustained_notes.remove(&note);
-                                synth.play(note, velocity);
+                                // sustained_notes.remove(&note);
+                                synth.play(note);
                             }
                             _ => unreachable!(),
                         }
@@ -94,25 +89,25 @@ pub fn run(options: Options) -> Result<()> {
                 }
                 EventType::Controller => {
                     if let Some(EvCtrl {
-                        param: 64, value, ..
+                        param: 21, value, ..
                     }) = event.get_data()
                     {
                         // if value > 0 {
-                        //     synth.set_vibrato(5.0)
+                        synth.set_volume(value as u8)
                         // } else {
-                        //     synth.set_vibrato(0.0)
+                        //     synth.set_volume(0)
                         // }
-                        if value > 0 {
-                            sustain = true;
-
-                            for &note in &sustained_notes {
-                                synth.silence(note);
-                            }
-
-                            sustained_notes.clear();
-                        } else {
-                            sustain = false;
-                        }
+                        // if value > 0 {
+                        //     sustain = true;
+                        //
+                        //     for &note in &sustained_notes {
+                        //         synth.silence(note);
+                        //     }
+                        //
+                        //     sustained_notes.clear();
+                        // } else {
+                        //     sustain = false;
+                        // }
                     }
                 }
                 _ => {}
