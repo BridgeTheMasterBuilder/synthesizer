@@ -3,12 +3,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use tables::PYTHAGOREAN;
 
 use crate::hw::SF;
-use crate::oscillator::TriangleOscillator;
+use crate::oscillator::Oscillator;
 use crate::tables::TABLES;
 
 #[derive(Clone)]
 pub struct Synth {
-    voices: BTreeMap<u8, TriangleOscillator>,
+    voices: BTreeMap<u8, Oscillator>,
     active_voices: BTreeSet<u8>,
     table: usize,
     last_note: u8,
@@ -105,7 +105,7 @@ impl Synth {
             oscillator.set_freq(freq);
             oscillator.set_vol(vol);
         } else {
-            let oscillator = TriangleOscillator::new(freq, vol);
+            let oscillator = Oscillator::new(freq, vol);
 
             self.voices.insert(note, oscillator);
         }

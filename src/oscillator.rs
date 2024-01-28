@@ -5,7 +5,7 @@ use crate::hw::SAMPLE_RATE;
 use crate::lfo::Lfo;
 
 #[derive(Debug, Clone)]
-pub struct TriangleOscillator {
+pub struct Oscillator {
     pub enabled: bool,
     freq: f64,
     phase: f64,
@@ -15,7 +15,7 @@ pub struct TriangleOscillator {
     lfo: Lfo,
 }
 
-impl TriangleOscillator {
+impl Oscillator {
     pub fn new(freq: f64, vol: u16) -> Self {
         Self {
             enabled: true,
@@ -49,12 +49,20 @@ impl TriangleOscillator {
         self.lfo.set_freq(freq);
     }
 
+    fn sample_sawtooth(phase: f64) -> f64 {
+        phase - phase.floor()
+    }
+    fn sample_triangle(phase: f64) -> f64 {
+        (phase * TAU).sin().asin()
+    }
+
     pub fn output(&mut self) -> i16 {
         if self.buffer.is_some() {
             return self.buffer.take().unwrap();
         }
 
-        let sample = (self.phase * TAU).sin().asin();
+        // let sample = Self::sample_triangle(self.phase);
+        let sample = Self::sample_sawtooth(self.phase);
         let sample = sample * (self.env.volume() * 2.0) / PI;
 
         let vibrato = self.lfo.output();
