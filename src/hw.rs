@@ -22,8 +22,14 @@ pub struct IO {
 }
 
 impl IO {
-    pub fn new(main_port: i32, aux_port: i32, expr_port: i32, card: &str) -> Result<Self> {
-        let input_stream = MidiInputStream::new(main_port, aux_port, expr_port)?;
+    pub fn new(
+        main_port: i32,
+        aux_port: i32,
+        expr_port1: i32,
+        expr_port2: i32,
+        card: &str,
+    ) -> Result<Self> {
+        let input_stream = MidiInputStream::new(main_port, aux_port, expr_port1, expr_port2)?;
         let output_device = OutputDevice::new(card)?;
 
         let mut fds = output_device.get()?;
