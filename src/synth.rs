@@ -1,4 +1,5 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::array;
+use std::collections::BTreeSet;
 
 use tables::PYTHAGOREAN;
 
@@ -8,7 +9,7 @@ use crate::tables::TABLES;
 
 #[derive(Clone)]
 pub struct Synth {
-    voices: BTreeMap<u8, Oscillator>,
+    voices: [Oscillator; 109],
     active_voices: BTreeSet<u8>,
     table: usize,
     last_note: u8,
@@ -20,7 +21,7 @@ pub struct Synth {
 impl Synth {
     pub fn new() -> Self {
         Self {
-            voices: BTreeMap::new(),
+            voices: array::from_fn(|_| Oscillator::new(0.0, 0)),
             active_voices: BTreeSet::new(),
             table: PYTHAGOREAN as usize,
             last_note: 60,
@@ -65,10 +66,10 @@ impl Synth {
         if !self.active_voices.is_empty() {
             let (base_freq, current_note) = (self.last_freq, self.last_note);
 
-            for note in &self.active_voices {
-                let oscillator = self.voices.get_mut(note).unwrap();
+            for &note in &self.active_voices {
+                let oscillator = &mut self.voices[note as usize];
 
-                let interval = *note as i8 - current_note as i8;
+                let interval = note as i8 - current_note as i8;
 
                 if let Some(freq) = Self::transform_freq(base_freq, interval, &TABLES[self.table]) {
                     oscillator.set_freq(freq);
@@ -100,21 +101,16 @@ impl Synth {
     fn play_note_with_freq_and_vol(&mut self, note: u8, freq: f64, vol: u8) {
         let vol = vol as u16;
 
-        if let Some(oscillator) = self.voices.get_mut(&note) {
-            oscillator.enabled = true;
-            oscillator.set_freq(freq);
-            oscillator.set_vol(vol);
-        } else {
-            let oscillator = Oscillator::new(freq, vol);
-
-            self.voices.insert(note, oscillator);
-        }
+        let oscillator = &mut self.voices[note as usize];
+        oscillator.enabled = true;
+        oscillator.set_freq(freq);
+        oscillator.set_vol(vol);
 
         self.active_voices.insert(note);
     }
 
     pub fn set_vibrato(&mut self, freq: f64) {
-        for (_, voice) in &mut self.voices {
+        for voice in &mut self.voices {
             voice.set_vibrato(freq);
         }
     }
@@ -138,23 +134,20 @@ impl Synth {
         // self.log();
     }
 
-    fn log(&self) {
-        println!("Fundamental: {} - {}", self.last_note, self.last_freq);
-        println!("Currently active voices:");
-        for (note, osc) in &self.voices {
-            if !osc.enabled {
-                continue;
-            }
-
-            println!("{note}: {}", osc.freq());
-        }
-    }
+    // fn log(&self) {
+    //     println!("Fundamental: {} - {}", self.last_note, self.last_freq);
+    //     println!("Currently active voices:");
+    //     for (note, osc) in &self.voices {
+    //         if !osc.enabled {
+    //             continue;
+    //         }
+    //
+    //         println!("{note}: {}", osc.freq());
+    //     }
+    // }
 
     pub fn silence(&mut self, note: u8) {
-        if let Some(voice) = self.voices.get_mut(&note) {
-            // voice.enabled = false;
-            voice.set_vol(0);
-        };
+        self.voices[note as usize].set_vol(0);
 
         self.active_voices.remove(&note);
     }
@@ -165,7 +158,8 @@ impl Iterator for Synth {
     fn next(&mut self) -> Option<Self::Item> {
         let sum: i16 = self
             .voices
-            .values_mut()
+            // .values_mut()
+            .iter_mut()
             .filter(|voice| voice.enabled)
             .fold(0, |sum, sample| sum.saturating_add(sample.output()));
 
