@@ -99,10 +99,10 @@ fn test_inexact_n(
         synth.change_tuning(factor);
     }
 
-    synth.play(midi_note, volume);
+    synth.play(midi_note);
 
     for &(midi_interval, _, _) in intervals {
-        synth.play(midi_note + midi_interval, volume);
+        synth.play(midi_note + midi_interval);
     }
 
     let mut filename_suffix = String::new();
@@ -210,7 +210,7 @@ mod basic {
     #[test]
     fn test_oscillator_stability() {
         let mut synth = Synth::new();
-        synth.play(60, 127);
+        synth.play(60);
 
         let a = &mut synth;
         let _ = a.into_iter().take(SAMPLE_RATE as usize * 2 * 60 * 60 * 24);
@@ -238,7 +238,7 @@ mod volume {
     #[test]
     fn test_silent() {
         let mut synth = Synth::new();
-        synth.play(60, 0);
+        synth.play(60);
 
         let fundamentals = determine_n_strongest_frequencies(&mut synth, 1, "_silent.wav");
 
@@ -248,7 +248,7 @@ mod volume {
     #[test]
     fn test_almost_silent() {
         let mut synth = Synth::new();
-        synth.play(60, 1);
+        synth.play(60);
 
         let fundamentals = determine_n_strongest_frequencies(&mut synth, 1, "_almost_silent.wav");
 
@@ -258,7 +258,7 @@ mod volume {
     #[test]
     fn test_envelope() {
         let mut synth = Synth::new();
-        synth.play(60, 127);
+        synth.play(60);
 
         let a = &mut synth;
 
@@ -278,13 +278,13 @@ mod volume {
     #[test]
     fn test_envelope_change_volume() {
         let mut synth = Synth::new();
-        synth.play(60, 127);
+        synth.play(60);
 
         let a = &mut synth;
 
         let mut first: Vec<i16> = a.into_iter().take(SAMPLE_RATE as usize * 2).collect();
 
-        synth.play(60, 63);
+        synth.play(60);
 
         let b = &mut synth;
 
@@ -301,7 +301,7 @@ mod tuning {
     #[test]
     fn test_change_fundamental_identity() {
         let mut synth = Synth::new();
-        synth.play(60, 127);
+        synth.play(60);
 
         synth.change_fundamental(60 - 12);
 
@@ -316,7 +316,7 @@ mod tuning {
         let mut synth = Synth::new();
         synth.change_tuning(64);
 
-        synth.play(70, 127);
+        synth.play(70);
 
         let fundamentals = determine_n_strongest_frequencies(
             &mut synth,
@@ -671,7 +671,7 @@ mod dyads {
         let mut synth = Synth::new();
 
         synth.change_tuning(67);
-        synth.play(61, 127);
+        synth.play(61);
 
         let fundamentals = determine_n_strongest_frequencies(&mut synth, 1, "_empty_interval");
 
@@ -682,8 +682,8 @@ mod dyads {
     fn test_descending_interval() {
         let mut synth = Synth::new();
 
-        synth.play(60, 127);
-        synth.play(55, 127);
+        synth.play(60);
+        synth.play(55);
 
         let fundamentals = determine_n_strongest_frequencies(&mut synth, 2, "_descending_interval");
 
@@ -876,7 +876,7 @@ mod vibrato {
     fn test_extremely_slow_vibrato() {
         let mut synth = Synth::new();
 
-        synth.play(84, 127);
+        synth.play(84);
         synth.set_vibrato(f64::min_positive_value());
 
         let buffer: Vec<i16> = synth
@@ -891,7 +891,7 @@ mod vibrato {
     fn test_very_slow_vibrato() {
         let mut synth = Synth::new();
 
-        synth.play(84, 127);
+        synth.play(84);
         synth.set_vibrato(0.001);
 
         let buffer: Vec<i16> = synth
@@ -906,7 +906,7 @@ mod vibrato {
     fn test_slow_vibrato() {
         let mut synth = Synth::new();
 
-        synth.play(84, 127);
+        synth.play(84);
         synth.set_vibrato(1.0);
 
         let buffer: Vec<i16> = synth
@@ -921,7 +921,7 @@ mod vibrato {
     fn test_normal_vibrato() {
         let mut synth = Synth::new();
 
-        synth.play(84, 127);
+        synth.play(84);
         synth.set_vibrato(6.0);
 
         let buffer: Vec<i16> = synth
@@ -937,7 +937,7 @@ mod vibrato {
     fn test_fast_vibrato() {
         let mut synth = Synth::new();
 
-        synth.play(84, 127);
+        synth.play(84);
         synth.set_vibrato(120.0);
 
         let buffer: Vec<i16> = synth
@@ -953,7 +953,7 @@ mod vibrato {
     fn test_very_fast_vibrato() {
         let mut synth = Synth::new();
 
-        synth.play(84, 127);
+        synth.play(84);
         synth.set_vibrato(1000.0);
 
         let buffer: Vec<i16> = synth
@@ -969,7 +969,7 @@ mod vibrato {
     fn test_extremely_fast_vibrato() {
         let mut synth = Synth::new();
 
-        synth.play(84, 127);
+        synth.play(84);
         synth.set_vibrato(f64::max_value());
 
         let buffer: Vec<i16> = synth
@@ -984,7 +984,7 @@ mod vibrato {
     fn test_vibrato_identity() {
         let mut synth = Synth::new();
 
-        synth.play(60, 127);
+        synth.play(60);
         synth.set_vibrato(0.0);
 
         let fundamentals = determine_n_strongest_frequencies(&mut synth, 1, "_vibrato_identity");
@@ -997,7 +997,7 @@ mod vibrato {
     fn test_enable_disable_vibrato_identity() {
         let mut synth = Synth::new();
 
-        synth.play(60, 127);
+        synth.play(60);
         synth.set_vibrato(6.0);
 
         let a = &mut synth;

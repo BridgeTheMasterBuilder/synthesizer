@@ -26,7 +26,7 @@ impl Synth {
             table: PYTHAGOREAN as usize,
             last_note: 60,
             last_freq: 264.0,
-            volume: 0,
+            volume: 127,
             cutoff_vol: 1,
         }
     }

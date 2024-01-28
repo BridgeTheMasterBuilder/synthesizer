@@ -52,6 +52,9 @@ impl Oscillator {
     fn sample_sawtooth(phase: f64) -> f64 {
         phase - phase.floor()
     }
+    fn sample_sine(phase: f64) -> f64 {
+        (phase * TAU).sin()
+    }
     fn sample_triangle(phase: f64) -> f64 {
         (phase * TAU).sin().asin()
     }
@@ -62,14 +65,16 @@ impl Oscillator {
         }
 
         // let sample = Self::sample_triangle(self.phase);
-        let sample = Self::sample_sawtooth(self.phase);
+        // let sample = Self::sample_sawtooth(self.phase);
+        let sample = Self::sample_sine(self.phase);
         let sample = sample * (self.env.volume() * 2.0) / PI;
+        // let sample = sample * (self.env.volume() );
 
-        let vibrato = self.lfo.output();
-        let delta = (self.freq * 2.0_f64.powf(10.0 / 1200.0)) - self.freq;
-        let new_freq = self.freq + delta * vibrato;
-
-        self.adjust_vibrato(new_freq);
+        // let vibrato = self.lfo.output();
+        // let delta = (self.freq * 2.0_f64.powf(10.0 / 1200.0)) - self.freq;
+        // let new_freq = self.freq + delta * vibrato;
+        //
+        // self.adjust_vibrato(new_freq);
 
         self.enabled = !self.env.adjust_volume();
 
