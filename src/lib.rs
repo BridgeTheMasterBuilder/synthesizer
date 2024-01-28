@@ -108,6 +108,11 @@ pub fn run(options: Options) -> Result<()> {
                         // } else {
                         //     sustain = false;
                         // }
+                    } else if let Some(EvCtrl {
+                        param: 22, value, ..
+                    }) = event.get_data()
+                    {
+                        synth.set_vibrato((value / 16) as f64)
                     }
                 }
                 _ => {}
