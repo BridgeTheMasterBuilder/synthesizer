@@ -163,8 +163,8 @@ impl Iterator for Synth {
             .filter(|voice| voice.enabled)
             .fold(0, |sum, sample| sum.saturating_add(sample.output()));
 
-        let sample = sum * self.volume as i16;
-        // let sample = sum;
+        // let sample = sum * self.volume as i16;
+        let sample = sum;
 
         Some(sample)
     }
