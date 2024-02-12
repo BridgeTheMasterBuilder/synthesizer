@@ -14,11 +14,13 @@ pub struct Synth {
     table: usize,
     last_note: u8,
     last_freq: f64,
-    volume: u8,
+    volume: f64,
     cutoff_vol: u8,
 }
 
 impl Synth {
+    const VOLUME: u8 = 127;
+
     pub fn new() -> Self {
         Self {
             voices: array::from_fn(|_| Oscillator::new(0.0, 0)),
@@ -26,7 +28,8 @@ impl Synth {
             table: PYTHAGOREAN as usize,
             last_note: 60,
             last_freq: 264.0,
-            volume: 127,
+            // volume: 0.0,
+            volume: 1.0,
             cutoff_vol: 1,
         }
     }
@@ -104,7 +107,7 @@ impl Synth {
         let oscillator = &mut self.voices[note as usize];
         oscillator.enabled = true;
         oscillator.set_freq(freq);
-        oscillator.set_vol(vol);
+        oscillator.set_volume(vol);
 
         self.active_voices.insert(note);
     }
@@ -116,7 +119,8 @@ impl Synth {
     }
 
     pub fn set_volume(&mut self, vol: u8) {
-        self.volume = if vol <= self.cutoff_vol { 0 } else { vol };
+        // self.volume = if vol <= self.cutoff_vol { 0 } else { vol };
+        self.volume = vol as f64 / 127.0;
         //
         // for (_, voice) in &mut self.voices {
         //     // TODO need to check if the voice is enabled
@@ -129,7 +133,8 @@ impl Synth {
         let interval = note - last_note;
 
         if let Some(freq) = Self::transform_freq(self.last_freq, interval, &TABLES[self.table]) {
-            self.play_note_with_freq_and_vol(note as u8, freq, self.cutoff_vol + 1);
+            // self.play_note_with_freq_and_vol(note as u8, freq, self.cutoff_vol + 1);
+            self.play_note_with_freq_and_vol(note as u8, freq, Self::VOLUME);
         }
         // self.log();
     }
@@ -147,7 +152,7 @@ impl Synth {
     // }
 
     pub fn silence(&mut self, note: u8) {
-        self.voices[note as usize].set_vol(0);
+        self.voices[note as usize].set_volume(0);
 
         self.active_voices.remove(&note);
     }
@@ -162,9 +167,32 @@ impl Iterator for Synth {
             .iter_mut()
             .filter(|voice| voice.enabled)
             .fold(0, |sum, sample| sum.saturating_add(sample.output()));
-
-        // let sample = sum * self.volume as i16;
-        let sample = sum;
+        // let mut voices_to_disable = Vec::new();
+        //
+        // let sum: i16 = self
+        //     // .voices
+        //     .active_voices
+        //     // .values_mut()
+        //     .iter()
+        //     // .filter(|voice| voice.enabled)
+        //     .fold(0, |sum, &note| {
+        //         let oscillator = &mut self.voices[note as usize];
+        //
+        //         if oscillator.volume() == 0 {
+        //             voices_to_disable.push(note);
+        //         }
+        //
+        //         let sample = oscillator.output();
+        //
+        //         sum.saturating_add(sample)
+        //     });
+        //
+        // voices_to_disable.iter().for_each(|note| {
+        //     self.active_voices.remove(note);
+        // });
+        //
+        let sample = (sum as f64 * self.volume) as i16;
+        // let sample = sum;
 
         Some(sample)
     }

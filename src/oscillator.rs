@@ -1,4 +1,4 @@
-use std::f64::consts::{PI, TAU};
+use std::f64::consts::TAU;
 
 use crate::envelope::Envelope;
 use crate::hw::SAMPLE_RATE;
@@ -41,7 +41,7 @@ impl Oscillator {
         self.phase_incr = freq / SAMPLE_RATE as f64;
     }
 
-    pub fn set_vol(&mut self, vol: u16) {
+    pub fn set_volume(&mut self, vol: u16) {
         self.env.set_volume(vol);
     }
 
@@ -67,14 +67,15 @@ impl Oscillator {
         // let sample = Self::sample_triangle(self.phase);
         // let sample = Self::sample_sawtooth(self.phase);
         let sample = Self::sample_sine(self.phase);
-        let sample = sample * (self.env.volume() * 2.0) / PI;
+        // let sample = sample * (self.env.volume() * 2.0) / PI;
+        let sample = sample * self.env.volume() as f64;
         // let sample = sample * (self.env.volume() );
 
-        // let vibrato = self.lfo.output();
-        // let delta = (self.freq * 2.0_f64.powf(10.0 / 1200.0)) - self.freq;
-        // let new_freq = self.freq + delta * vibrato;
-        //
-        // self.adjust_vibrato(new_freq);
+        let vibrato = self.lfo.output();
+        let delta = (self.freq * 2.0_f64.powf(10.0 / 1200.0)) - self.freq;
+        let new_freq = self.freq + delta * vibrato;
+
+        self.adjust_vibrato(new_freq);
 
         self.enabled = !self.env.adjust_volume();
 
@@ -87,5 +88,9 @@ impl Oscillator {
         self.buffer.replace(sample as i16);
 
         sample as i16
+    }
+
+    pub fn volume(&self) -> u16 {
+        self.env.volume()
     }
 }
