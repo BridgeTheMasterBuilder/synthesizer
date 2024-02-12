@@ -15,7 +15,7 @@ pub struct Synth {
     last_note: u8,
     last_freq: f64,
     volume: f64,
-    cutoff_vol: u8,
+    // cutoff_vol: u8,
 }
 
 impl Synth {
@@ -30,7 +30,7 @@ impl Synth {
             last_freq: 264.0,
             // volume: 0.0,
             volume: 1.0,
-            cutoff_vol: 1,
+            // cutoff_vol: 1,
         }
     }
 

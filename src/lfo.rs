@@ -18,7 +18,15 @@ impl Lfo {
         }
     }
 
+    pub fn freq(&self) -> f64 {
+        self.freq
+    }
+
     pub fn set_freq(&mut self, freq: f64) {
+        if freq == 0.0 {
+            self.phase = 0.0;
+        }
+
         self.freq = freq;
         self.phase_incr = freq / SAMPLE_RATE as f64;
     }

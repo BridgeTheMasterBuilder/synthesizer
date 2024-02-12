@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use ::alsa::seq::EventType;
 use alsa::seq::{EvCtrl, EvNote};
 use anyhow::Result;
@@ -47,7 +45,7 @@ pub fn run(options: Options) -> Result<()> {
     // let mut sustain = false;
 
     // let mut sustained_notes = BTreeSet::new();
-    let mut active_control_notes = BTreeSet::new();
+    let mut active_control_notes = 0;
     let mut ignore_note_off = false;
 
     loop {
@@ -67,9 +65,9 @@ pub fn run(options: Options) -> Result<()> {
                                         synth.change_fundamental(current_fundamental);
                                     }
 
-                                    active_control_notes.remove(&note);
+                                    active_control_notes -= 1;
 
-                                    if active_control_notes.len() == 0 {
+                                    if active_control_notes == 0 {
                                         ignore_note_off = false;
                                     }
                                 }
@@ -78,9 +76,9 @@ pub fn run(options: Options) -> Result<()> {
                                         synth.change_tuning(note);
                                     }
 
-                                    active_control_notes.remove(&note);
+                                    active_control_notes -= 1;
 
-                                    if active_control_notes.len() == 0 {
+                                    if active_control_notes == 0 {
                                         ignore_note_off = false;
                                     }
                                 }
@@ -101,14 +99,14 @@ pub fn run(options: Options) -> Result<()> {
                                 // TODO magic numbers
                                 48..=59 => {
                                     // collecting = true;
-                                    active_control_notes.insert(note);
+                                    active_control_notes += 1;
 
                                     temporary_fundamental = note;
 
                                     synth.change_fundamental(temporary_fundamental);
                                 }
                                 60..=72 => {
-                                    active_control_notes.insert(note);
+                                    active_control_notes += 1;
                                     synth.change_tuning(note);
                                 }
                                 _ => (),
@@ -152,7 +150,7 @@ pub fn run(options: Options) -> Result<()> {
                         ..
                     }) = event.get_data()
                     {
-                        synth.set_vibrato((value / 16) as f64)
+                        synth.set_vibrato((value / 14) as f64)
                     } else if let Some(EvCtrl {
                         param: 64,
                         value: 127,

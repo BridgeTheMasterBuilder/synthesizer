@@ -37,10 +37,6 @@ impl Oscillator {
         self.phase_incr = freq / SAMPLE_RATE as f64;
     }
 
-    pub fn adjust_vibrato(&mut self, freq: f64) {
-        self.phase_incr = freq / SAMPLE_RATE as f64;
-    }
-
     pub fn set_volume(&mut self, vol: u16) {
         self.env.set_volume(vol);
     }
@@ -72,14 +68,15 @@ impl Oscillator {
         // let sample = sample * (self.env.volume() );
 
         let vibrato = self.lfo.output();
-        let delta = (self.freq * 2.0_f64.powf(10.0 / 1200.0)) - self.freq;
+        let delta = (self.freq * 2.0_f64.powf((5.0 * self.lfo.freq()) / 1200.0)) - self.freq;
         let new_freq = self.freq + delta * vibrato;
+        // dbg!(self.lfo.freq());
 
-        self.adjust_vibrato(new_freq);
+        let vibrato_phase_incr = new_freq / SAMPLE_RATE as f64;
 
         self.enabled = !self.env.adjust_volume();
 
-        self.phase += self.phase_incr;
+        self.phase += self.phase_incr + vibrato_phase_incr;
 
         if self.phase >= 1.0 {
             self.phase -= 1.0;
