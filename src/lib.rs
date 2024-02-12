@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use ::alsa::seq::EventType;
 use alsa::seq::{EvCtrl, EvNote};
 use anyhow::Result;
@@ -38,10 +40,15 @@ pub fn run(options: Options) -> Result<()> {
     let mut io = IO::new(main_port, aux_port, expr_port, &card)?;
     let mut synth = Synth::new();
 
-    let mut collecting = false;
+    // let mut collecting = false;
+    // TODO magic numbers
+    let mut temporary_fundamental = 48;
+    let mut current_fundamental = 48;
     // let mut sustain = false;
 
     // let mut sustained_notes = BTreeSet::new();
+    let mut active_control_notes = BTreeSet::new();
+    let mut ignore_note_off = false;
 
     loop {
         io.write(&mut synth)?;
@@ -52,9 +59,30 @@ pub fn run(options: Options) -> Result<()> {
                     if let Some(EvNote { channel, note, .. }) = event.get_data() {
                         match channel {
                             0 => match note {
-                                48..=59 => collecting = false,
-                                60..=72 if !collecting => {
-                                    synth.change_tuning(note);
+                                // TODO magic numbers
+                                // 48..=59 => collecting = false,
+                                // 60..=72 if !collecting => {
+                                48..=59 => {
+                                    if !ignore_note_off {
+                                        synth.change_fundamental(current_fundamental);
+                                    }
+
+                                    active_control_notes.remove(&note);
+
+                                    if active_control_notes.len() == 0 {
+                                        ignore_note_off = false;
+                                    }
+                                }
+                                60..=72 => {
+                                    if !ignore_note_off {
+                                        synth.change_tuning(note);
+                                    }
+
+                                    active_control_notes.remove(&note);
+
+                                    if active_control_notes.len() == 0 {
+                                        ignore_note_off = false;
+                                    }
                                 }
                                 _ => (),
                             },
@@ -70,11 +98,17 @@ pub fn run(options: Options) -> Result<()> {
                     if let Some(EvNote { channel, note, .. }) = event.get_data() {
                         match channel {
                             0 => match note {
+                                // TODO magic numbers
                                 48..=59 => {
-                                    collecting = true;
-                                    synth.change_fundamental(note);
+                                    // collecting = true;
+                                    active_control_notes.insert(note);
+
+                                    temporary_fundamental = note;
+
+                                    synth.change_fundamental(temporary_fundamental);
                                 }
                                 60..=72 => {
+                                    active_control_notes.insert(note);
                                     synth.change_tuning(note);
                                 }
                                 _ => (),
@@ -89,7 +123,10 @@ pub fn run(options: Options) -> Result<()> {
                 }
                 EventType::Controller => {
                     if let Some(EvCtrl {
-                        param: 21, value, ..
+                        // TODO magic numbers
+                        param: 21,
+                        value,
+                        ..
                     }) = event.get_data()
                     {
                         // if value > 0 {
@@ -109,10 +146,21 @@ pub fn run(options: Options) -> Result<()> {
                         //     sustain = false;
                         // }
                     } else if let Some(EvCtrl {
-                        param: 22, value, ..
+                        // TODO magic numbers
+                        param: 22,
+                        value,
+                        ..
                     }) = event.get_data()
                     {
                         synth.set_vibrato((value / 16) as f64)
+                    } else if let Some(EvCtrl {
+                        param: 64,
+                        value: 127,
+                        ..
+                    }) = event.get_data()
+                    {
+                        ignore_note_off = true;
+                        current_fundamental = temporary_fundamental;
                     }
                 }
                 _ => {}
