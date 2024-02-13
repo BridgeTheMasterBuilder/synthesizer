@@ -156,6 +156,17 @@ impl Synth {
 
         self.active_voices.remove(&note);
     }
+
+    pub fn set_modulator_ratio(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|oscillator| oscillator.set_modulator_ratio(value));
+    }
+    pub fn set_modulator_amount(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|oscillator| oscillator.set_modulator_amount(value));
+    }
 }
 
 impl Iterator for Synth {

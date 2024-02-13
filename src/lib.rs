@@ -47,6 +47,7 @@ pub fn run(options: Options) -> Result<()> {
     // let mut sustained_notes = BTreeSet::new();
     let mut active_control_notes = 0;
     let mut ignore_note_off = false;
+    let mut config_mode = false;
 
     loop {
         io.write(&mut synth)?;
@@ -127,22 +128,11 @@ pub fn run(options: Options) -> Result<()> {
                         ..
                     }) = event.get_data()
                     {
-                        // if value > 0 {
-                        synth.set_volume(value as u8)
-                        // } else {
-                        //     synth.set_volume(0)
-                        // }
-                        // if value > 0 {
-                        //     sustain = true;
-                        //
-                        //     for &note in &sustained_notes {
-                        //         synth.silence(note);
-                        //     }
-                        //
-                        //     sustained_notes.clear();
-                        // } else {
-                        //     sustain = false;
-                        // }
+                        if config_mode {
+                            synth.set_modulator_amount(value as u8)
+                        } else {
+                            synth.set_volume(value as u8)
+                        }
                     } else if let Some(EvCtrl {
                         // TODO magic numbers
                         param: 22,
@@ -150,15 +140,28 @@ pub fn run(options: Options) -> Result<()> {
                         ..
                     }) = event.get_data()
                     {
-                        synth.set_vibrato((value / 14) as f64)
+                        if config_mode {
+                            synth.set_modulator_ratio(value as u8)
+                        } else {
+                            synth.set_vibrato((value / 14) as f64)
+                        }
                     } else if let Some(EvCtrl {
                         param: 64,
-                        value: 127,
+                        value,
+                        channel,
                         ..
                     }) = event.get_data()
                     {
-                        ignore_note_off = true;
-                        current_fundamental = temporary_fundamental;
+                        match channel {
+                            0 => {
+                                config_mode = (value == 127);
+                            }
+                            1 if value == 127 => {
+                                ignore_note_off = true;
+                                current_fundamental = temporary_fundamental;
+                            }
+                            _ => {}
+                        }
                     }
                 }
                 _ => {}
