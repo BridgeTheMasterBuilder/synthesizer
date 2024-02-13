@@ -13,9 +13,13 @@ pub struct Oscillator {
     buffer: Option<i16>,
     env: Envelope,
     lfo: Lfo,
+    modulator: Lfo,
 }
 
 impl Oscillator {
+    const RATIO: f64 = 0.0;
+    const AMOUNT: f64 = 0.0;
+
     pub fn new(freq: f64, vol: u16) -> Self {
         Self {
             enabled: true,
@@ -25,6 +29,7 @@ impl Oscillator {
             buffer: None,
             env: Envelope::new(vol),
             lfo: Lfo::new(0.0),
+            modulator: Lfo::new(0.0),
         }
     }
 
@@ -35,6 +40,7 @@ impl Oscillator {
     pub fn set_freq(&mut self, freq: f64) {
         self.freq = freq;
         self.phase_incr = freq / SAMPLE_RATE as f64;
+        self.modulator.set_freq(freq * Self::RATIO);
     }
 
     pub fn set_volume(&mut self, vol: u16) {
@@ -68,15 +74,22 @@ impl Oscillator {
         // let sample = sample * (self.env.volume() );
 
         let vibrato = self.lfo.output();
+        // let delta = (self.freq * 2.0_f64.powf((5.0 * self.lfo.freq()) / 1200.0)) - self.freq;
+        // let new_freq = self.freq + delta * vibrato;
         let delta = (self.freq * 2.0_f64.powf((5.0 * self.lfo.freq()) / 1200.0)) - self.freq;
         let new_freq = self.freq + delta * vibrato;
-        // dbg!(self.lfo.freq());
 
         let vibrato_phase_incr = new_freq / SAMPLE_RATE as f64;
+        // let vibrato_phase_incr = 0.0;
+        let modulation = self.modulator.output();
+        let delta = (self.freq * Self::AMOUNT) - self.freq;
+        let new_freq = self.freq + delta * modulation;
+
+        let modulator_phase_incr = new_freq / SAMPLE_RATE as f64;
 
         self.enabled = !self.env.adjust_volume();
 
-        self.phase += self.phase_incr + vibrato_phase_incr;
+        self.phase += self.phase_incr + modulator_phase_incr + vibrato_phase_incr;
 
         if self.phase >= 1.0 {
             self.phase -= 1.0;

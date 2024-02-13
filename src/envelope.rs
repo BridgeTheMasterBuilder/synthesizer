@@ -9,7 +9,7 @@ pub struct Envelope {
 impl Envelope {
     const DELAY: u8 = 1;
     const INCR: u16 = 1;
-    const GAIN: u16 = 64;
+    const GAIN: u16 = 32;
 
     pub fn new(vol: u16) -> Self {
         Self {
