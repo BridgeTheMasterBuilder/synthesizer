@@ -5,10 +5,21 @@ nothing = Fraction(0, 1)
 unison = Fraction(1, 1)
 apotome = Fraction(2187, 2048)
 factors = [3, 5, 7, 11, 13, 17, 19, 23, 29, 31]
-category_names = ['Unison', 'Minor 2nd', 'Major 2nd', 'Minor 3rd', 'Major 3rd', 'Perfect 4th', 'Augmented 4th',
-                  'Perfect 5th', 'Minor 6th', 'Major 6th', 'Minor 7th', 'Major 7th']
+category_names = [
+    "Unison",
+    "Minor 2nd",
+    "Major 2nd",
+    "Minor 3rd",
+    "Major 3rd",
+    "Perfect 4th",
+    "Augmented 4th",
+    "Perfect 5th",
+    "Minor 6th",
+    "Major 6th",
+    "Minor 7th",
+    "Major 7th",
+]
 
-interval_map = dict()
 
 def powerset(L):
     result = [[]]
@@ -24,11 +35,20 @@ def simpler_interval(interval1, interval2):
     min_numerator = min(interval1.numerator, interval2.numerator)
     min_denominator = min(interval1.denominator, interval2.denominator)
 
-    if min_numerator == interval1.numerator and min_denominator == interval1.denominator:
+    if (
+        min_numerator == interval1.numerator
+        and min_denominator == interval1.denominator
+    ):
         return interval1
-    elif min_numerator == interval1.numerator and min_denominator == interval2.denominator:
+    elif (
+        min_numerator == interval1.numerator
+        and min_denominator == interval2.denominator
+    ):
         return interval1
-    elif min_numerator == interval2.numerator and min_denominator == interval1.denominator:
+    elif (
+        min_numerator == interval2.numerator
+        and min_denominator == interval1.denominator
+    ):
         return interval2
     else:
         return interval2
@@ -120,8 +140,12 @@ def partition_intervals(intervals):
         elif 1050 <= cents < 1150:
             M7.add(interval)
 
-    return list(map(lambda category: {nothing} if len(category) == 0 else category,
-                    [unis, m2, M2, m3, M3, P4, A4, P5, m6, M6, m7, M7]))
+    return list(
+        map(
+            lambda category: {nothing} if len(category) == 0 else category,
+            [unis, m2, M2, m3, M3, P4, A4, P5, m6, M6, m7, M7],
+        )
+    )
 
 
 def simplest_interval(intervals):
@@ -134,43 +158,50 @@ def simplest_interval(intervals):
     return simplest_interval
 
 
-tables = open('../tables.rs', 'w')
-table = open('table', 'w')
+def generate_intervals(tunings):
+    tables = open("../tables.rs", "w")
+    table = open("table", "w")
 
-tables.write(f'pub const TABLES: [[f64; 12]; {len(tunings)}] = [\n')
-for factors in tunings:
-    table.write(f'Prime factors: {sorted(factors)}\n')
+    interval_map = dict()
 
-    intervals = generate_intervals_with_factors({unison}, factors)
-    intervals = filter(lambda x: simpler_interval(x, apotome) == x, intervals)
-    categories = partition_intervals(intervals)
+    tables.write(f"pub const TABLES: [[f64; 12]; {len(tunings)}] = [\n")
+    for factors in tunings:
+        table.write(f"Prime factors: {sorted(factors)}\n")
 
-    tables.write('\t[\n')
-    for idx, category in enumerate(categories):
-        if len(category) != 0:
-            interval = simplest_interval(category)
+        intervals = generate_intervals_with_factors({unison}, factors)
+        intervals = filter(lambda x: simpler_interval(x, apotome) == x, intervals)
+        categories = partition_intervals(intervals)
 
-            if interval not in interval_map:
-                interval_map[interval] = {frozenset(factors)}
-            else:
-                interval_map[interval].add(frozenset(factors))
+        tables.write("\t[\n")
+        for idx, category in enumerate(categories):
+            if len(category) != 0:
+                interval = simplest_interval(category)
 
-            num, denom = interval.as_integer_ratio()
-            tables.write(f'\t\t{num}.0/{denom}.0,\n')
-            table.write(f'{category_names[idx]}: {interval} ({interval_to_cents(interval)})\n')
+                if interval not in interval_map:
+                    interval_map[interval] = {frozenset(factors)}
+                else:
+                    interval_map[interval].add(frozenset(factors))
 
-    tables.write('\t],\n')
-    table.write('\n')
-tables.write('];\n')
+                num, denom = interval.as_integer_ratio()
+                tables.write(f"\t\t{num}.0/{denom}.0,\n")
+                table.write(
+                    f"{category_names[idx]}: {interval} ({interval_to_cents(interval)})\n"
+                )
 
-for interval_entry in sorted(interval_map.items()):
-    interval, tunings = interval_entry
-    num, denom = interval.as_integer_ratio()
-    if num != 0 and interval != unison:
-        print(f'{num:4}/{denom:<4} - {interval_to_cents(interval):18}', end=' - ')
-        for tuning in tunings:
-            print('{', end=' ')
-            for factor in tuning:
-                print(factor, end=' ')
-            print('}', end=' ')
-        print()
+        tables.write("\t],\n")
+        table.write("\n")
+    tables.write("];\n")
+
+    for interval_entry in sorted(interval_map.items()):
+        interval, tunings = interval_entry
+        num, denom = interval.as_integer_ratio()
+        if num != 0 and interval != unison:
+            print(f"{num:4}/{denom:<4} - {interval_to_cents(interval):18}", end=" - ")
+            for tuning in tunings:
+                print("{", end=" ")
+                for factor in tuning:
+                    print(factor, end=" ")
+                print("}", end=" ")
+            print()
+
+    return interval_map
