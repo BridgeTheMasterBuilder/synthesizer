@@ -19,12 +19,14 @@ mod tables;
 #[derive(Bpaf)]
 #[bpaf(options)]
 pub struct Options {
-    #[bpaf(short('m'), long, argument)]
+    #[bpaf(short('p'), long, argument)]
     pub main_port: i32,
     #[bpaf(short('a'), long, argument)]
     pub aux_port: i32,
     #[bpaf(short('e'), long, argument)]
     pub expr_port: i32,
+    #[bpaf(short('m'), long, argument)]
+    pub mixer_port: i32,
     #[bpaf(short('c'), long, argument)]
     pub card: String,
 }
@@ -33,9 +35,10 @@ pub fn run(options: Options) -> Result<()> {
     let main_port = options.main_port;
     let aux_port = options.aux_port;
     let expr_port = options.expr_port;
+    let mixer_port = options.mixer_port;
     let card = options.card;
 
-    let mut io = IO::new(main_port, aux_port, expr_port, &card)?;
+    let mut io = IO::new(main_port, aux_port, expr_port, mixer_port, &card)?;
     let mut synth = Synth::new();
 
     // let mut collecting = false;
@@ -57,7 +60,7 @@ pub fn run(options: Options) -> Result<()> {
                 EventType::Noteoff => {
                     if let Some(EvNote { channel, note, .. }) = event.get_data() {
                         match channel {
-                            0 => match note {
+                            2 => match note {
                                 // TODO magic numbers
                                 // 48..=59 => collecting = false,
                                 // 60..=72 if !collecting => {
@@ -96,7 +99,7 @@ pub fn run(options: Options) -> Result<()> {
                 EventType::Noteon => {
                     if let Some(EvNote { channel, note, .. }) = event.get_data() {
                         match channel {
-                            0 => match note {
+                            2 => match note {
                                 // TODO magic numbers
                                 48..=59 => {
                                     // collecting = true;
@@ -162,6 +165,16 @@ pub fn run(options: Options) -> Result<()> {
                             }
                             _ => {}
                         }
+                    } else if let Some(EvCtrl {
+                        param: 16, value, ..
+                    }) = event.get_data()
+                    {
+                        synth.set_modulator_ratio(value as u8)
+                    } else if let Some(EvCtrl {
+                        param: 20, value, ..
+                    }) = event.get_data()
+                    {
+                        synth.set_modulator_amount(value as u8)
                     }
                 }
                 _ => {}

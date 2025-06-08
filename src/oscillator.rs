@@ -32,8 +32,8 @@ impl Oscillator {
             env: Envelope::new(vol),
             lfo: Lfo::new(0.0),
             modulator: Lfo::new(0.0),
-            modulator_ratio: 0.01,
-            modulator_amount: 6.0,
+            modulator_ratio: 0.0,
+            modulator_amount: 0.0,
         }
     }
 
