@@ -4,12 +4,13 @@ use std::collections::BTreeSet;
 use tables::PYTHAGOREAN;
 
 use crate::hw::SF;
-use crate::oscillator::Oscillator;
+use crate::oscillator::Waveform;
 use crate::tables::TABLES;
+use crate::voice::Voice;
 
 #[derive(Clone)]
 pub struct Synth {
-    voices: [Oscillator; 109],
+    voices: [Voice; 109],
     active_voices: BTreeSet<u8>,
     table: usize,
     last_note: u8,
@@ -23,7 +24,7 @@ impl Synth {
 
     pub fn new() -> Self {
         Self {
-            voices: array::from_fn(|_| Oscillator::new(0.0, 0)),
+            voices: array::from_fn(|_| Voice::new(0.0, 0)),
             active_voices: BTreeSet::new(),
             table: PYTHAGOREAN as usize,
             last_note: 60,
@@ -166,6 +167,12 @@ impl Synth {
         self.voices
             .iter_mut()
             .for_each(|oscillator| oscillator.set_modulator_amount(value));
+    }
+
+    pub fn set_waveform(&mut self, waveform: Waveform) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.set_waveform(waveform));
     }
 }
 

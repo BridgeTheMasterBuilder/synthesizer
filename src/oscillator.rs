@@ -1,39 +1,32 @@
 use std::f64::consts::TAU;
 
-use crate::envelope::Envelope;
 use crate::hw::SAMPLE_RATE;
-use crate::lfo::Lfo;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Copy)]
+pub enum Waveform {
+    Sine,
+    Pulse,
+    Triangle,
+    Sawtooth,
+}
+
+#[derive(Clone, Debug)]
 pub struct Oscillator {
-    pub enabled: bool,
     freq: f64,
     phase: f64,
     phase_incr: f64,
-    buffer: Option<i16>,
-    env: Envelope,
-    lfo: Lfo,
-    modulator: Lfo,
-    modulator_ratio: f64,
-    modulator_amount: f64,
+    duty: f64,
+    waveform: Waveform,
 }
 
 impl Oscillator {
-    // const RATIO: f64 = 0.0;
-    // const AMOUNT: f64 = 0.0;
-
-    pub fn new(freq: f64, vol: u16) -> Self {
+    pub fn new(freq: f64) -> Self {
         Self {
-            enabled: true,
             freq,
             phase: 0.0,
             phase_incr: freq / SAMPLE_RATE as f64,
-            buffer: None,
-            env: Envelope::new(vol),
-            lfo: Lfo::new(0.0),
-            modulator: Lfo::new(0.0),
-            modulator_ratio: 0.0,
-            modulator_amount: 0.0,
+            duty: 0.5,
+            waveform: Waveform::Sine,
         }
     }
 
@@ -42,79 +35,44 @@ impl Oscillator {
     }
 
     pub fn set_freq(&mut self, freq: f64) {
-        self.freq = freq;
-        self.phase_incr = freq / SAMPLE_RATE as f64;
-        self.modulator.set_freq(freq * self.modulator_ratio);
-    }
-
-    pub fn set_volume(&mut self, vol: u16) {
-        self.env.set_volume(vol);
-    }
-
-    pub fn set_vibrato(&mut self, freq: f64) {
-        self.lfo.set_freq(freq);
-    }
-
-    fn sample_sawtooth(phase: f64) -> f64 {
-        phase - phase.floor()
-    }
-    fn sample_sine(phase: f64) -> f64 {
-        (phase * TAU).sin()
-    }
-    fn sample_triangle(phase: f64) -> f64 {
-        (phase * TAU).sin().asin()
-    }
-
-    pub fn output(&mut self) -> i16 {
-        if self.buffer.is_some() {
-            return self.buffer.take().unwrap();
+        if freq == 0.0 {
+            self.phase = 0.0;
         }
 
-        // let sample = Self::sample_triangle(self.phase);
-        // let sample = Self::sample_sawtooth(self.phase);
-        let sample = Self::sample_sine(self.phase);
-        // let sample = sample * (self.env.volume() * 2.0) / PI;
-        let sample = sample * self.env.volume() as f64;
-        // let sample = sample * (self.env.volume() );
+        self.freq = freq;
+        self.phase_incr = freq / SAMPLE_RATE as f64;
+    }
 
-        let vibrato = self.lfo.output();
-        // let delta = (self.freq * 2.0_f64.powf((5.0 * self.lfo.freq()) / 1200.0)) - self.freq;
-        // let new_freq = self.freq + delta * vibrato;
-        let delta = (self.freq * 2.0_f64.powf((5.0 * self.lfo.freq()) / 1200.0)) - self.freq;
-        let new_freq = self.freq + delta * vibrato;
+    pub fn set_waveform(&mut self, waveform: Waveform) {
+        self.waveform = waveform;
+    }
 
-        let vibrato_phase_incr = new_freq / SAMPLE_RATE as f64;
-        // let vibrato_phase_incr = 0.0;
-        let modulation = self.modulator.output();
-        let delta = (self.freq * self.modulator_amount) - self.freq;
-        let new_freq = self.freq + delta * modulation;
-        // dbg!(self.modulator_amount, self.modulator_ratio);
+    pub fn set_duty(&mut self, duty: f64) {
+        self.duty = duty;
+    }
 
-        let modulator_phase_incr = new_freq / SAMPLE_RATE as f64;
+    pub fn output(&mut self) -> f64 {
+        let sample = self.sample();
 
-        self.enabled = !self.env.adjust_volume();
+        self.advance_phase(0.0);
 
-        self.phase += self.phase_incr + modulator_phase_incr + vibrato_phase_incr;
+        sample
+    }
+
+    pub fn sample(&self) -> f64 {
+        match self.waveform {
+            Waveform::Sine => (self.phase * TAU).sin(),
+            Waveform::Pulse => (((self.phase <= self.duty) as i64) * 2 - 1) as f64,
+            Waveform::Triangle => (self.phase * TAU).sin().asin(),
+            Waveform::Sawtooth => (self.phase - self.phase.floor()) * 2.0 - 1.0,
+        }
+    }
+
+    pub fn advance_phase(&mut self, incr: f64) {
+        self.phase += self.phase_incr + incr;
 
         if self.phase >= 1.0 {
             self.phase -= 1.0;
         }
-
-        self.buffer.replace(sample as i16);
-
-        sample as i16
-    }
-
-    pub fn volume(&self) -> u16 {
-        self.env.volume()
-    }
-
-    pub fn set_modulator_ratio(&mut self, value: u8) {
-        self.modulator_ratio = value as f64 / 8.0;
-        self.modulator.set_freq(self.freq * self.modulator_ratio);
-    }
-
-    pub fn set_modulator_amount(&mut self, value: u8) {
-        self.modulator_amount = value as f64 / 4.0;
     }
 }

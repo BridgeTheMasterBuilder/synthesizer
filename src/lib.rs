@@ -4,6 +4,7 @@ use anyhow::Result;
 use bpaf::Bpaf;
 
 use crate::hw::IO;
+use crate::oscillator::Waveform;
 use crate::synth::Synth;
 
 mod envelope;
@@ -162,11 +163,21 @@ pub fn run(options: Options) -> Result<()> {
                         _ => {}
                     },
                     Some(EvCtrl { param, value, .. }) if param == 16 => {
-                        synth.set_modulator_ratio(value as u8)
+                        let waveform = match value / (128 / 4) {
+                            0 => Waveform::Sine,
+                            1 => Waveform::Pulse,
+                            2 => Waveform::Triangle,
+                            3 => Waveform::Sawtooth,
+                            _ => unreachable!(),
+                        };
+                        synth.set_waveform(waveform);
                     }
-                    Some(EvCtrl { param, value, .. }) if param == 20 => {
-                        synth.set_modulator_amount(value as u8)
-                    }
+                    // Some(EvCtrl { param, value, .. }) if param == 16 => {
+                    //     synth.set_modulator_ratio(value as u8)
+                    // }
+                    // Some(EvCtrl { param, value, .. }) if param == 20 => {
+                    //     synth.set_modulator_amount(value as u8)
+                    // }
                     _ => {}
                 },
                 _ => {}
