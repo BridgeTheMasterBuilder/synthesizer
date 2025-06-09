@@ -105,10 +105,10 @@ impl Synth {
     fn play_note_with_freq_and_vol(&mut self, note: u8, freq: f64, vol: u8) {
         let vol = vol as u16;
 
-        let oscillator = &mut self.voices[note as usize];
-        oscillator.enabled = true;
-        oscillator.set_freq(freq);
-        oscillator.set_volume(vol);
+        let voice = &mut self.voices[note as usize];
+        voice.enabled = true;
+        voice.set_freq(freq);
+        voice.set_volume(vol);
 
         self.active_voices.insert(note);
     }
@@ -191,6 +191,12 @@ impl Synth {
         self.voices
             .iter_mut()
             .for_each(|voice| voice.set_modulator_duty(value));
+    }
+
+    pub fn set_gain(&mut self, value: u16) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.set_gain(value));
     }
 }
 

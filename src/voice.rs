@@ -25,7 +25,7 @@ impl Voice {
             enabled: true,
             oscillator: Oscillator::new(freq),
             buffer: None,
-            env: Envelope::new(vol),
+            env: Envelope::new(0.5, 1, 1, vol, 1),
             lfo: Oscillator::new(0.0),
             modulator: Oscillator::new(0.0),
             modulator_ratio: 0.0,
@@ -110,5 +110,9 @@ impl Voice {
 
     pub fn set_modulator_duty(&mut self, value: f64) {
         self.modulator.set_duty(value);
+    }
+
+    pub fn set_gain(&mut self, value: u16) {
+        self.env.set_gain(value as f64 / u16::MAX as f64);
     }
 }

@@ -39,6 +39,7 @@ const C5: u8 = 72;
 const MIXER: u8 = 0;
 const MANUAL: u8 = 1;
 const CONTROL: u8 = 2;
+const EXPRESSION: u8 = 3;
 const VOLUME: u32 = 21;
 const VIBRATO: u32 = 22;
 const DAMPER: u32 = 64;
@@ -86,7 +87,7 @@ pub fn run(options: Options) -> Result<()> {
                                         synth.change_fundamental(current_fundamental);
                                     }
 
-                                    active_control_notes -= MANUAL;
+                                    active_control_notes -= 1;
 
                                     if active_control_notes == 0 {
                                         ignore_note_off = false;
@@ -97,7 +98,7 @@ pub fn run(options: Options) -> Result<()> {
                                         synth.change_tuning(note);
                                     }
 
-                                    active_control_notes -= MANUAL;
+                                    active_control_notes -= 1;
 
                                     if active_control_notes == 0 {
                                         ignore_note_off = false;
@@ -146,58 +147,44 @@ pub fn run(options: Options) -> Result<()> {
                         channel,
                         ..
                     }) => match channel {
-                        MANUAL if param == VOLUME => {
-                            if config_mode {
-                                synth.set_modulator_amount(value as u8)
-                            } else {
-                                synth.set_volume(value as u8)
-                            }
-                        }
-                        MANUAL if param == VIBRATO => {
-                            if config_mode {
-                                synth.set_modulator_ratio(value as u8)
-                            } else {
-                                synth.set_vibrato((value / 14) as f64)
-                            }
-                        }
-                        MANUAL if param == DAMPER => match channel {
-                            0 => {
-                                config_mode = (value == 127);
-                            }
-                            MANUAL if value == 127 => {
-                                ignore_note_off = true;
-                                current_fundamental = temporary_fundamental;
+                        EXPRESSION => match param {
+                            VOLUME => synth.set_gain(value as u16 * 512),
+                            VIBRATO => synth.set_vibrato((value / 14) as f64),
+                            DAMPER => {
+                                if value == 127 {
+                                    ignore_note_off = true;
+                                    current_fundamental = temporary_fundamental;
+                                }
                             }
                             _ => {}
                         },
-                        MIXER if param == WAVEFORM => {
-                            let waveform = match value / (128 / 4) {
-                                0 => Waveform::Sine,
-                                1 => Waveform::Pulse,
-                                2 => Waveform::Triangle,
-                                3 => Waveform::Sawtooth,
-                                _ => unreachable!(),
-                            };
-                            synth.set_waveform(waveform);
-                        }
-                        MIXER if param == MODULATOR_WAVEFORM => {
-                            let waveform = match value / (128 / 4) {
-                                0 => Waveform::Sine,
-                                1 => Waveform::Pulse,
-                                2 => Waveform::Triangle,
-                                3 => Waveform::Sawtooth,
-                                _ => unreachable!(),
-                            };
-                            synth.set_modulator_waveform(waveform);
-                        }
-                        MIXER if param == DUTY => synth.set_duty(value as f64 / 127.0),
-                        MIXER if param == MODULATOR_RATIO => synth.set_modulator_ratio(value as u8),
-                        MIXER if param == MODULATOR_AMOUNT => {
-                            synth.set_modulator_amount(value as u8)
-                        }
-                        MIXER if param == MODULATOR_DUTY => {
-                            synth.set_modulator_duty(value as f64 / 127.0)
-                        }
+                        MIXER => match param {
+                            WAVEFORM => {
+                                let waveform = match value / (128 / 4) {
+                                    0 => Waveform::Sine,
+                                    1 => Waveform::Pulse,
+                                    2 => Waveform::Triangle,
+                                    3 => Waveform::Sawtooth,
+                                    _ => unreachable!(),
+                                };
+                                synth.set_waveform(waveform);
+                            }
+                            MODULATOR_WAVEFORM => {
+                                let waveform = match value / (128 / 4) {
+                                    0 => Waveform::Sine,
+                                    1 => Waveform::Pulse,
+                                    2 => Waveform::Triangle,
+                                    3 => Waveform::Sawtooth,
+                                    _ => unreachable!(),
+                                };
+                                synth.set_modulator_waveform(waveform);
+                            }
+                            DUTY => synth.set_duty(value as f64 / 127.0),
+                            MODULATOR_RATIO => synth.set_modulator_ratio(value as u8),
+                            MODULATOR_AMOUNT => synth.set_modulator_amount(value as u8),
+                            MODULATOR_DUTY => synth.set_modulator_duty(value as f64 / 127.0),
+                            _ => {}
+                        },
                         _ => {}
                     },
                     _ => {}
