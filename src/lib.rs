@@ -192,8 +192,12 @@ pub fn run(options: Options) -> Result<()> {
                         }
                         MIXER if param == DUTY => synth.set_duty(value as f64 / 127.0),
                         MIXER if param == MODULATOR_RATIO => synth.set_modulator_ratio(value as u8),
-                        MIXER if param == MODULATOR_AMOUNT => synth.set_modulator_amount(value as u8),
-                        MIXER if param == MODULATOR_DUTY => synth.set_modulator_duty(value as f64 / 127.0),
+                        MIXER if param == MODULATOR_AMOUNT => {
+                            synth.set_modulator_amount(value as u8)
+                        }
+                        MIXER if param == MODULATOR_DUTY => {
+                            synth.set_modulator_duty(value as f64 / 127.0)
+                        }
                         _ => {}
                     },
                     _ => {}
