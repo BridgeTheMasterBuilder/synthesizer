@@ -115,4 +115,8 @@ impl Voice {
     pub fn set_gain(&mut self, value: u16) {
         self.env.set_gain(value as f64 / u16::MAX as f64);
     }
+
+    pub fn set_attack(&mut self, value: u8) {
+        self.env.set_attack(value);
+    }
 }

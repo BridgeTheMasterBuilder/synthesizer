@@ -49,6 +49,10 @@ const DUTY: u32 = 20;
 const MODULATOR_RATIO: u32 = 25;
 const MODULATOR_AMOUNT: u32 = 29;
 const MODULATOR_DUTY: u32 = 21;
+const ATTACK: u32 = 46;
+const DECAY: u32 = 50;
+const SUSTAIN: u32 = 54;
+const RELEASE: u32 = 58;
 
 pub fn run(options: Options) -> Result<()> {
     let main_port = options.main_port;
@@ -183,6 +187,7 @@ pub fn run(options: Options) -> Result<()> {
                             MODULATOR_RATIO => synth.set_modulator_ratio(value as u8),
                             MODULATOR_AMOUNT => synth.set_modulator_amount(value as u8),
                             MODULATOR_DUTY => synth.set_modulator_duty(value as f64 / 127.0),
+                            ATTACK => synth.set_attack(value as u8),
                             _ => {}
                         },
                         _ => {}

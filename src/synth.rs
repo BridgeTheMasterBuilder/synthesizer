@@ -198,6 +198,12 @@ impl Synth {
             .iter_mut()
             .for_each(|voice| voice.set_gain(value));
     }
+
+    pub fn set_attack(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.set_attack(value));
+    }
 }
 
 impl Iterator for Synth {

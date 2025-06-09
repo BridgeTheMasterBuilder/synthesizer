@@ -1,3 +1,5 @@
+use crate::hw::SAMPLE_RATE;
+
 #[derive(Clone, Debug)]
 enum State {
     Waiting,
@@ -12,13 +14,13 @@ pub struct Envelope {
     vol: u16,
     incr: u16,
     target: u16,
-    attack_reload: u8,
-    attack: u8,
-    decay_reload: u8,
-    decay: u8,
+    attack_reload: u32,
+    attack: u32,
+    decay_reload: u32,
+    decay: u32,
     sustain: u16,
-    release_reload: u8,
-    release: u8,
+    release_reload: u32,
+    release: u32,
     state: State,
 }
 
@@ -26,7 +28,7 @@ impl Envelope {
     const MAX_POLYPHONY: u16 = 88;
     pub const PEAK: u16 = u16::MAX / Self::MAX_POLYPHONY;
 
-    pub fn new(gain: f64, attack: u8, decay: u8, sustain: u16, release: u8) -> Self {
+    pub fn new(gain: f64, attack: u32, decay: u32, sustain: u16, release: u32) -> Self {
         Self {
             gain,
             vol: 0,
@@ -186,5 +188,9 @@ impl Envelope {
 
     pub fn volume(&self) -> u16 {
         (self.vol as f64 * self.gain) as u16
+    }
+
+    pub fn set_attack(&mut self, value: u8) {
+        self.attack_reload = (value + 1) as u32;
     }
 }
