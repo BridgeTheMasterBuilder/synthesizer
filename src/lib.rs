@@ -9,12 +9,12 @@ use crate::synth::Synth;
 mod envelope;
 pub mod file;
 pub mod hw;
-mod lfo;
 mod midi;
 mod oscillator;
 mod pcm;
 pub mod synth;
 mod tables;
+mod voice;
 
 #[derive(Bpaf)]
 #[bpaf(options)]
@@ -31,6 +31,16 @@ pub struct Options {
     pub card: String,
 }
 
+const C3: u8 = 48;
+const H3: u8 = 59;
+const C4: u8 = 60;
+const C5: u8 = 72;
+const CONTROL: u8 = 2;
+const MANUAL: u8 = 1;
+const VOLUME: u32 = 21;
+const VIBRATO: u32 = 22;
+const DAMPER: u32 = 64;
+
 pub fn run(options: Options) -> Result<()> {
     let main_port = options.main_port;
     let aux_port = options.aux_port;
@@ -42,9 +52,8 @@ pub fn run(options: Options) -> Result<()> {
     let mut synth = Synth::new();
 
     // let mut collecting = false;
-    // TODO magic numbers
-    let mut temporary_fundamental = 48;
-    let mut current_fundamental = 48;
+    let mut temporary_fundamental = C3;
+    let mut current_fundamental = C3;
     // let mut sustain = false;
 
     // let mut sustained_notes = BTreeSet::new();
@@ -60,27 +69,27 @@ pub fn run(options: Options) -> Result<()> {
                 EventType::Noteoff => {
                     if let Some(EvNote { channel, note, .. }) = event.get_data() {
                         match channel {
-                            2 => match note {
+                            CONTROL => match note {
                                 // TODO magic numbers
                                 // 48..=59 => collecting = false,
                                 // 60..=72 if !collecting => {
-                                48..=59 => {
+                                C3..=H3 => {
                                     if !ignore_note_off {
                                         synth.change_fundamental(current_fundamental);
                                     }
 
-                                    active_control_notes -= 1;
+                                    active_control_notes -= MANUAL;
 
                                     if active_control_notes == 0 {
                                         ignore_note_off = false;
                                     }
                                 }
-                                60..=72 => {
+                                C4..=C5 => {
                                     if !ignore_note_off {
                                         synth.change_tuning(note);
                                     }
 
-                                    active_control_notes -= 1;
+                                    active_control_notes -= MANUAL;
 
                                     if active_control_notes == 0 {
                                         ignore_note_off = false;
@@ -91,7 +100,7 @@ pub fn run(options: Options) -> Result<()> {
                             // 1 if sustain => {
                             //     sustained_notes.insert(note);
                             // }
-                            1 => synth.silence(note),
+                            MANUAL => synth.silence(note),
                             _ => unreachable!(),
                         }
                     }
@@ -99,9 +108,8 @@ pub fn run(options: Options) -> Result<()> {
                 EventType::Noteon => {
                     if let Some(EvNote { channel, note, .. }) = event.get_data() {
                         match channel {
-                            2 => match note {
-                                // TODO magic numbers
-                                48..=59 => {
+                            CONTROL => match note {
+                                C3..=H3 => {
                                     // collecting = true;
                                     active_control_notes += 1;
 
@@ -109,13 +117,13 @@ pub fn run(options: Options) -> Result<()> {
 
                                     synth.change_fundamental(temporary_fundamental);
                                 }
-                                60..=72 => {
+                                C4..=C5 => {
                                     active_control_notes += 1;
                                     synth.change_tuning(note);
                                 }
                                 _ => (),
                             },
-                            1 => {
+                            MANUAL => {
                                 // sustained_notes.remove(&note);
                                 synth.play(note);
                             }
@@ -123,60 +131,44 @@ pub fn run(options: Options) -> Result<()> {
                         }
                     }
                 }
-                EventType::Controller => {
-                    if let Some(EvCtrl {
-                        // TODO magic numbers
-                        param: 21,
-                        value,
-                        ..
-                    }) = event.get_data()
-                    {
+                EventType::Controller => match event.get_data() {
+                    Some(EvCtrl { param, value, .. }) if param == VOLUME => {
                         if config_mode {
                             synth.set_modulator_amount(value as u8)
                         } else {
                             synth.set_volume(value as u8)
                         }
-                    } else if let Some(EvCtrl {
-                        // TODO magic numbers
-                        param: 22,
-                        value,
-                        ..
-                    }) = event.get_data()
-                    {
+                    }
+                    Some(EvCtrl { param, value, .. }) if param == VIBRATO => {
                         if config_mode {
                             synth.set_modulator_ratio(value as u8)
                         } else {
                             synth.set_vibrato((value / 14) as f64)
                         }
-                    } else if let Some(EvCtrl {
-                        param: 64,
+                    }
+                    Some(EvCtrl {
+                        param,
                         value,
                         channel,
                         ..
-                    }) = event.get_data()
-                    {
-                        match channel {
-                            0 => {
-                                config_mode = (value == 127);
-                            }
-                            1 if value == 127 => {
-                                ignore_note_off = true;
-                                current_fundamental = temporary_fundamental;
-                            }
-                            _ => {}
+                    }) if param == DAMPER => match channel {
+                        0 => {
+                            config_mode = (value == 127);
                         }
-                    } else if let Some(EvCtrl {
-                        param: 16, value, ..
-                    }) = event.get_data()
-                    {
+                        MANUAL if value == 127 => {
+                            ignore_note_off = true;
+                            current_fundamental = temporary_fundamental;
+                        }
+                        _ => {}
+                    },
+                    Some(EvCtrl { param, value, .. }) if param == 16 => {
                         synth.set_modulator_ratio(value as u8)
-                    } else if let Some(EvCtrl {
-                        param: 20, value, ..
-                    }) = event.get_data()
-                    {
+                    }
+                    Some(EvCtrl { param, value, .. }) if param == 20 => {
                         synth.set_modulator_amount(value as u8)
                     }
-                }
+                    _ => {}
+                },
                 _ => {}
             }
         }
