@@ -100,4 +100,15 @@ impl Voice {
     pub fn set_waveform(&mut self, waveform: Waveform) {
         self.oscillator.set_waveform(waveform);
     }
+
+    pub fn set_modulator_waveform(&mut self, waveform: Waveform) {
+        self.modulator.set_waveform(waveform);
+    }
+    pub fn set_duty(&mut self, value: f64) {
+        self.oscillator.set_duty(value);
+    }
+
+    pub fn set_modulator_duty(&mut self, value: f64) {
+        self.modulator.set_duty(value);
+    }
 }

@@ -174,6 +174,24 @@ impl Synth {
             .iter_mut()
             .for_each(|voice| voice.set_waveform(waveform));
     }
+
+    pub fn set_modulator_waveform(&mut self, waveform: Waveform) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.set_modulator_waveform(waveform));
+    }
+
+    pub fn set_duty(&mut self, value: f64) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.set_duty(value));
+    }
+
+    pub fn set_modulator_duty(&mut self, value: f64) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.set_modulator_duty(value));
+    }
 }
 
 impl Iterator for Synth {

@@ -36,11 +36,18 @@ const C3: u8 = 48;
 const H3: u8 = 59;
 const C4: u8 = 60;
 const C5: u8 = 72;
-const CONTROL: u8 = 2;
+const MIXER: u8 = 0;
 const MANUAL: u8 = 1;
+const CONTROL: u8 = 2;
 const VOLUME: u32 = 21;
 const VIBRATO: u32 = 22;
 const DAMPER: u32 = 64;
+const WAVEFORM: u32 = 16;
+const MODULATOR_WAVEFORM: u32 = 17;
+const DUTY: u32 = 20;
+const MODULATOR_RATIO: u32 = 25;
+const MODULATOR_AMOUNT: u32 = 29;
+const MODULATOR_DUTY: u32 = 21;
 
 pub fn run(options: Options) -> Result<()> {
     let main_port = options.main_port;
@@ -133,51 +140,62 @@ pub fn run(options: Options) -> Result<()> {
                     }
                 }
                 EventType::Controller => match event.get_data() {
-                    Some(EvCtrl { param, value, .. }) if param == VOLUME => {
-                        if config_mode {
-                            synth.set_modulator_amount(value as u8)
-                        } else {
-                            synth.set_volume(value as u8)
-                        }
-                    }
-                    Some(EvCtrl { param, value, .. }) if param == VIBRATO => {
-                        if config_mode {
-                            synth.set_modulator_ratio(value as u8)
-                        } else {
-                            synth.set_vibrato((value / 14) as f64)
-                        }
-                    }
                     Some(EvCtrl {
                         param,
                         value,
                         channel,
                         ..
-                    }) if param == DAMPER => match channel {
-                        0 => {
-                            config_mode = (value == 127);
+                    }) => match channel {
+                        MANUAL if param == VOLUME => {
+                            if config_mode {
+                                synth.set_modulator_amount(value as u8)
+                            } else {
+                                synth.set_volume(value as u8)
+                            }
                         }
-                        MANUAL if value == 127 => {
-                            ignore_note_off = true;
-                            current_fundamental = temporary_fundamental;
+                        MANUAL if param == VIBRATO => {
+                            if config_mode {
+                                synth.set_modulator_ratio(value as u8)
+                            } else {
+                                synth.set_vibrato((value / 14) as f64)
+                            }
                         }
+                        MANUAL if param == DAMPER => match channel {
+                            0 => {
+                                config_mode = (value == 127);
+                            }
+                            MANUAL if value == 127 => {
+                                ignore_note_off = true;
+                                current_fundamental = temporary_fundamental;
+                            }
+                            _ => {}
+                        },
+                        MIXER if param == WAVEFORM => {
+                            let waveform = match value / (128 / 4) {
+                                0 => Waveform::Sine,
+                                1 => Waveform::Pulse,
+                                2 => Waveform::Triangle,
+                                3 => Waveform::Sawtooth,
+                                _ => unreachable!(),
+                            };
+                            synth.set_waveform(waveform);
+                        }
+                        MIXER if param == MODULATOR_WAVEFORM => {
+                            let waveform = match value / (128 / 4) {
+                                0 => Waveform::Sine,
+                                1 => Waveform::Pulse,
+                                2 => Waveform::Triangle,
+                                3 => Waveform::Sawtooth,
+                                _ => unreachable!(),
+                            };
+                            synth.set_modulator_waveform(waveform);
+                        }
+                        MIXER if param == DUTY => synth.set_duty(value as f64 / 127.0),
+                        MIXER if param == MODULATOR_RATIO => synth.set_modulator_ratio(value as u8),
+                        MIXER if param == MODULATOR_AMOUNT => synth.set_modulator_amount(value as u8),
+                        MIXER if param == MODULATOR_DUTY => synth.set_modulator_duty(value as f64 / 127.0),
                         _ => {}
                     },
-                    Some(EvCtrl { param, value, .. }) if param == 16 => {
-                        let waveform = match value / (128 / 4) {
-                            0 => Waveform::Sine,
-                            1 => Waveform::Pulse,
-                            2 => Waveform::Triangle,
-                            3 => Waveform::Sawtooth,
-                            _ => unreachable!(),
-                        };
-                        synth.set_waveform(waveform);
-                    }
-                    // Some(EvCtrl { param, value, .. }) if param == 16 => {
-                    //     synth.set_modulator_ratio(value as u8)
-                    // }
-                    // Some(EvCtrl { param, value, .. }) if param == 20 => {
-                    //     synth.set_modulator_amount(value as u8)
-                    // }
                     _ => {}
                 },
                 _ => {}
