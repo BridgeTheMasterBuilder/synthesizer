@@ -14,33 +14,41 @@ pub struct Envelope {
     vol: u16,
     incr: u16,
     target: u16,
-    attack_reload: u32,
+    delay: u32,
     attack: u32,
-    decay_reload: u32,
+    attack_reload: u32,
     decay: u32,
+    decay_reload: u32,
     sustain: u16,
-    release_reload: u32,
     release: u32,
+    release_reload: u32,
     state: State,
 }
 
 impl Envelope {
     const MAX_POLYPHONY: u16 = 88;
     pub const PEAK: u16 = u16::MAX / Self::MAX_POLYPHONY;
+    pub const INCR: u16 = 1;
+    // pub const MAX_DELAY: u32 = 10 * SAMPLE_RATE;
+    pub const DELAY: u32 = 10 * SAMPLE_RATE / 128;
+    // pub const MIN_DELAY: u32 = 1024;
 
     pub fn new(gain: f64, attack: u32, decay: u32, sustain: u16, release: u32) -> Self {
         Self {
             gain,
             vol: 0,
-            incr: 0,
+            incr: Self::INCR,
             target: 0,
-            attack_reload: attack,
+            // delay: Self::MAX_DELAY / 128 + Self::MIN_DELAY,
+            // delay: Self::MAX_DELAY / 128,
+            delay: Self::DELAY,
             attack,
-            decay_reload: decay,
+            attack_reload: attack,
             decay,
+            decay_reload: decay,
             sustain,
-            release_reload: release,
             release,
+            release_reload: release,
             state: State::Waiting,
         }
     }
@@ -50,13 +58,18 @@ impl Envelope {
             State::Waiting => false,
             State::Attack => {
                 if self.attack > 0 {
-                    self.attack -= 1;
+                    if self.delay > 0 {
+                        self.delay -= 1;
+                    } else {
+                        self.attack -= 1;
 
-                    self.vol = self.vol.saturating_add(self.incr);
+                        self.delay = Self::DELAY;
+                        self.vol = self.vol.saturating_add(self.incr);
+                    }
                 } else {
                     self.target = self.sustain;
 
-                    self.incr = (Self::PEAK - self.sustain) / self.decay_reload as u16;
+                    // self.incr = (Self::PEAK - self.sustain) / self.decay_reload as u16;
 
                     self.state = State::Decay;
                 }
@@ -64,11 +77,16 @@ impl Envelope {
             }
             State::Decay => {
                 if self.decay > 0 {
-                    self.decay -= 1;
+                    if self.delay > 0 {
+                        self.delay -= 1;
+                    } else {
+                        self.decay -= 1;
 
-                    self.vol = self.vol.saturating_sub(self.incr);
+                        self.delay = Self::DELAY;
+                        self.vol = self.vol.saturating_sub(self.incr);
+                    }
                 } else {
-                    self.incr = self.sustain / self.release_reload as u16;
+                    // self.incr = self.sustain / self.release_reload as u16;
 
                     self.state = State::Sustain;
                 }
@@ -77,11 +95,18 @@ impl Envelope {
             State::Sustain => false,
             State::Release => {
                 if self.release > 0 {
-                    self.release -= 1;
+                    if self.delay > 0 {
+                        self.delay -= 1;
+                    } else {
+                        self.release -= 1;
 
-                    self.vol = self
-                        .vol
-                        .saturating_sub(self.sustain / self.release_reload as u16);
+                        self.delay = Self::DELAY;
+                        self.vol = self.vol.saturating_sub(self.incr);
+                    }
+
+                    // self.vol = self
+                    //     .vol
+                    //     .saturating_sub(self.sustain / self.release_reload as u16);
 
                     false
                 } else {
@@ -174,13 +199,18 @@ impl Envelope {
             // self.target = vol * self.gain;
             self.sustain = vol * 512 / Self::MAX_POLYPHONY;
             self.target = Self::PEAK;
-            self.incr = Self::PEAK / self.attack_reload as u16;
+            // self.incr = Self::PEAK / self.attack_reload as u16;
             self.attack = self.attack_reload;
             self.decay = self.decay_reload;
             self.release = self.release_reload;
+            // self.set_delay(self.attack);
             self.state = State::Attack;
         }
     }
+
+    // fn set_delay(&mut self, delay: u32) {
+    //     self.delay = (Self::MAX_DELAY * delay) / 128 + Self::MIN_DELAY;
+    // }
 
     pub fn set_gain(&mut self, gain: f64) {
         self.gain = gain;
@@ -191,6 +221,7 @@ impl Envelope {
     }
 
     pub fn set_attack(&mut self, value: u8) {
-        self.attack_reload = (value + 1) as u32;
+        // self.attack_reload = (value + 1) as u32;
+        self.attack = (value + 1) as u32;
     }
 }
