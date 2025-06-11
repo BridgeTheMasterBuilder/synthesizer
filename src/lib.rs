@@ -188,6 +188,9 @@ pub fn run(options: Options) -> Result<()> {
                             MODULATOR_AMOUNT => synth.set_modulator_amount(value as u8),
                             MODULATOR_DUTY => synth.set_modulator_duty(value as f64 / 127.0),
                             ATTACK => synth.set_attack(value as u8),
+                            DECAY => synth.set_decay(value as u8),
+                            SUSTAIN => synth.set_sustain(value as u8),
+                            RELEASE => synth.set_release(value as u8),
                             _ => {}
                         },
                         _ => {}

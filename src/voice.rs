@@ -11,6 +11,7 @@ pub struct Voice {
     buffer: Option<i16>,
     env: Envelope,
     lfo: Oscillator,
+    // TODO create Modulator struct
     modulator: Oscillator,
     modulator_ratio: f64,
     modulator_amount: f64,
@@ -118,5 +119,17 @@ impl Voice {
 
     pub fn set_attack(&mut self, value: u8) {
         self.env.set_attack(value);
+    }
+
+    pub fn set_decay(&mut self, value: u8) {
+        self.env.set_decay(value);
+    }
+
+    pub fn set_sustain(&mut self, value: u8) {
+        self.env.set_sustain(value);
+    }
+
+    pub fn set_release(&mut self, value: u8) {
+        self.env.set_release(value);
     }
 }

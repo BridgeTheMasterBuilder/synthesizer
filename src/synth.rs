@@ -19,6 +19,7 @@ pub struct Synth {
     // cutoff_vol: u8,
 }
 
+// TODO Refactor with forall_voices or something similar
 impl Synth {
     const VOLUME: u8 = 127;
 
@@ -193,6 +194,7 @@ impl Synth {
             .for_each(|voice| voice.set_modulator_duty(value));
     }
 
+    // TODO make the envelope public so you don't need these wrappers?
     pub fn set_gain(&mut self, value: u16) {
         self.voices
             .iter_mut()
@@ -203,6 +205,24 @@ impl Synth {
         self.voices
             .iter_mut()
             .for_each(|voice| voice.set_attack(value));
+    }
+
+    pub fn set_decay(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.set_decay(value));
+    }
+
+    pub fn set_sustain(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.set_sustain(value));
+    }
+
+    pub fn set_release(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.set_release(value));
     }
 }
 

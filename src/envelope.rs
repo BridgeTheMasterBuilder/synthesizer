@@ -224,4 +224,16 @@ impl Envelope {
         // self.attack_reload = (value + 1) as u32;
         self.attack = (value + 1) as u32;
     }
+
+    pub fn set_decay(&mut self, value: u8) {
+        self.decay = (value + 1) as u32;
+    }
+
+    pub fn set_sustain(&mut self, value: u8) {
+        self.sustain = (value + 1) as u16;
+    }
+
+    pub fn set_release(&mut self, value: u8) {
+        self.release = (value + 1) as u32;
+    }
 }
