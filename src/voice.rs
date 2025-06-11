@@ -26,7 +26,7 @@ impl Voice {
             enabled: true,
             oscillator: Oscillator::new(freq),
             buffer: None,
-            env: Envelope::new(0.5, 1, 1, vol, 1),
+            env: Envelope::new(0.5, 1, 1, 127, 1),
             lfo: Oscillator::new(0.0),
             modulator: Oscillator::new(0.0),
             modulator_ratio: 0.0,
@@ -60,6 +60,10 @@ impl Voice {
 
         let sample = sample * self.env.volume() as f64;
 
+        // if self.env.volume() != 0 {
+        //     dbg!(self.env.volume());
+        // }
+        //
         let vibrato = self.lfo.output();
         // let delta = (self.freq * 2.0_f64.powf((5.0 * self.lfo.freq()) / 1200.0)) - self.freq;
         // let new_freq = self.freq + delta * vibrato;
