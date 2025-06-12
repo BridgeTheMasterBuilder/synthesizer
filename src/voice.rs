@@ -1,5 +1,3 @@
-use std::f64::consts::TAU;
-
 use crate::envelope::Envelope;
 use crate::hw::SAMPLE_RATE;
 use crate::oscillator::{Oscillator, Waveform};
@@ -18,9 +16,6 @@ pub struct Voice {
 }
 
 impl Voice {
-    // const RATIO: f64 = 0.0;
-    // const AMOUNT: f64 = 0.0;
-
     // TODO vol as f64 / u16::MAX as f64?
     pub fn new(freq: f64, vol: u16) -> Self {
         Self {
@@ -61,13 +56,7 @@ impl Voice {
 
         let sample = sample * self.env.volume() as f64;
 
-        // if self.env.volume() != 0 {
-        //     dbg!(self.env.volume());
-        // }
-        //
         let vibrato = self.lfo.output();
-        // let delta = (self.freq * 2.0_f64.powf((5.0 * self.lfo.freq()) / 1200.0)) - self.freq;
-        // let new_freq = self.freq + delta * vibrato;
         let delta = (self.oscillator.freq() * 2.0_f64.powf((5.0 * self.lfo.freq()) / 1200.0))
             - self.oscillator.freq();
         let new_freq = self.oscillator.freq() + delta * vibrato;
@@ -97,9 +86,6 @@ impl Voice {
     pub fn set_modulator_ratio(&mut self, value: u8) {
         // TODO fine tune
         self.modulator_ratio = value as f64 / 8.0;
-        // self.modulator_ratio = value as f64;
-        // self.modulator
-        //     .set_freq(self.oscillator.freq() * self.modulator_ratio);
         self.modulator
             .set_freq(self.oscillator.freq() * self.modulator_ratio);
     }
@@ -107,7 +93,6 @@ impl Voice {
     pub fn set_modulator_amount(&mut self, value: u8) {
         // TODO fine tune
         self.modulator_amount = value as f64 / 4.0;
-        // self.modulator_amount = value as f64;
     }
 
     pub fn set_waveform(&mut self, waveform: Waveform) {

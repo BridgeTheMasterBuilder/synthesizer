@@ -1,5 +1,3 @@
-use crate::hw::SAMPLE_RATE;
-
 #[derive(Clone, Debug)]
 enum State {
     Waiting,
@@ -49,6 +47,7 @@ impl Envelope {
         }
     }
 
+    // TODO No need for this bool return value if we have self.enabled?
     pub fn adjust_volume(&mut self) -> bool {
         match self.state {
             State::Waiting => false,
@@ -108,7 +107,6 @@ impl Envelope {
 
                     false
                 } else {
-                    // self.vol = self.vol.saturating_sub(self.incr);
                     self.vol = if self.vol > self.target {
                         self.vol.saturating_sub(self.incr)
                     } else {
@@ -131,7 +129,6 @@ impl Envelope {
 
     pub fn set_volume(&mut self, vol: u16) {
         if vol == 0 {
-            // self.target = 0;
             self.enabled = false;
         } else {
             self.enabled = true;

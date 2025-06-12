@@ -66,16 +66,7 @@ pub fn run(options: Options) -> Result<()> {
     let mut io = IO::new(main_port, aux_port, expr_port, mixer_port, &card)?;
     let mut synth = Synth::new();
 
-    // let mut collecting = false;
-    let mut temporary_fundamental = C3;
-    let mut current_fundamental = C3;
-    // let mut sustain = false;
-
-    // let mut sustained_notes = BTreeSet::new();
-    let mut active_control_notes = 0;
-    let mut ignore_note_off = false;
-    let mut config_mode = false;
-
+    // TODO implement sustain in synth.rs
     loop {
         io.write(&mut synth)?;
 
@@ -85,36 +76,15 @@ pub fn run(options: Options) -> Result<()> {
                     if let Some(EvNote { channel, note, .. }) = event.get_data() {
                         match channel {
                             CONTROL => match note {
-                                // TODO magic numbers
-                                // 48..=59 => collecting = false,
-                                // 60..=72 if !collecting => {
                                 C3..=H3 => {
-                                    // if !ignore_note_off {
-                                    synth.change_fundamental(current_fundamental);
-                                    // }
-
-                                    // active_control_notes -= 1;
-
-                                    // if active_control_notes == 0 {
-                                    //     ignore_note_off = false;
-                                    // }
+                                    synth.change_fundamental(note);
                                 }
                                 C4..=C5 => {
-                                    // if !ignore_note_off {
                                     synth.change_tuning(note);
-                                    // }
-
-                                    // active_control_notes -= 1;
-                                    //
-                                    // if active_control_notes == 0 {
-                                    //     ignore_note_off = false;
-                                    // }
                                 }
                                 _ => (),
                             },
-                            // 1 if sustain => {
-                            //     sustained_notes.insert(note);
-                            // }
+
                             MANUAL => synth.silence(note),
                             _ => unreachable!(),
                         }
@@ -125,27 +95,17 @@ pub fn run(options: Options) -> Result<()> {
                         match channel {
                             CONTROL => match note {
                                 C3..=H3 => {
-                                    // collecting = true;
-                                    // active_control_notes += 1;
-
-                                    // temporary_fundamental = note;
-                                    current_fundamental = note;
-
-                                    // synth.change_fundamental(temporary_fundamental);
-                                    synth.change_fundamental(current_fundamental);
+                                    synth.change_fundamental(note);
                                 }
                                 C4..=C5 => {
-                                    // active_control_notes += 1;
                                     synth.change_tuning(note);
                                 }
                                 CIS5..=C6 => {
-                                    // active_control_notes += 1;
                                     synth.change_tuning(note - 12);
                                 }
                                 _ => (),
                             },
                             MANUAL => {
-                                // sustained_notes.remove(&note);
                                 synth.play(note);
                             }
                             _ => unreachable!(),
@@ -162,6 +122,7 @@ pub fn run(options: Options) -> Result<()> {
                         EXPRESSION => match param {
                             VOLUME => synth.set_gain(value as u16 * 512),
                             VIBRATO => synth.set_vibrato((value / 14) as f64),
+                            // TODO call synth.sustain()
                             // DAMPER => {
                             //     if value == 127 {
                             //         ignore_note_off = true;

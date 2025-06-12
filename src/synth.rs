@@ -8,6 +8,7 @@ use crate::oscillator::Waveform;
 use crate::tables::TABLES;
 use crate::voice::Voice;
 
+// TODO implement sustain in here
 #[derive(Clone)]
 pub struct Synth {
     voices: [Voice; 109],
@@ -16,13 +17,13 @@ pub struct Synth {
     last_note: u8,
     last_freq: f64,
     volume: f64,
-    // cutoff_vol: u8,
 }
 
 // TODO Refactor with forall_voices or something similar
 impl Synth {
     const VOLUME: u8 = 127;
 
+    // TODO Magic numbers
     pub fn new() -> Self {
         Self {
             voices: array::from_fn(|_| Voice::new(0.0, 0)),
@@ -30,12 +31,12 @@ impl Synth {
             table: PYTHAGOREAN as usize,
             last_note: 60,
             last_freq: 264.0,
-            // volume: 0.0,
             volume: 1.0,
-            // cutoff_vol: 1,
         }
     }
 
+    // TODO Make an enum and perform the translation elsewhere?
+    // TODO Magic numbers
     pub fn change_tuning(&mut self, note: u8) {
         match note - 60 {
             1 => self.table ^= 0b00_0010_0000,
@@ -55,6 +56,7 @@ impl Synth {
         self.retune();
     }
 
+    // TODO Magic numbers
     pub fn change_fundamental(&mut self, note: u8) {
         let normalized_base = (note + 12) as i8;
         let interval = normalized_base - 60;
@@ -89,15 +91,11 @@ impl Synth {
             midi_interval += 12;
             freq /= 2.0;
         }
-        // let sign = midi_interval.signum();
 
-        // let interval = interval_table[midi_interval.unsigned_abs() as usize];
         let interval = interval_table[midi_interval as usize];
 
         if interval == 0.0 {
             None
-            // } else if sign >= 0 {
-            //     Some(freq * interval)
         } else {
             Some(freq * interval)
         }
@@ -121,21 +119,15 @@ impl Synth {
     }
 
     pub fn set_volume(&mut self, vol: u8) {
-        // self.volume = if vol <= self.cutoff_vol { 0 } else { vol };
         self.volume = vol as f64 / 127.0;
-        //
-        // for (_, voice) in &mut self.voices {
-        //     // TODO need to check if the voice is enabled
-        //     voice.set_vol(vol as u16);
-        // }
     }
+
     pub fn play(&mut self, note: u8) {
         let note = note as i8;
         let last_note = self.last_note as i8;
         let interval = note - last_note;
 
         if let Some(freq) = Self::transform_freq(self.last_freq, interval, &TABLES[self.table]) {
-            // self.play_note_with_freq_and_vol(note as u8, freq, self.cutoff_vol + 1);
             self.play_note_with_freq_and_vol(note as u8, freq, Self::VOLUME);
         }
         // self.log();
@@ -231,36 +223,11 @@ impl Iterator for Synth {
     fn next(&mut self) -> Option<Self::Item> {
         let sum: i16 = self
             .voices
-            // .values_mut()
             .iter_mut()
             .filter(|voice| voice.enabled)
             .fold(0, |sum, sample| sum.saturating_add(sample.output()));
-        // let mut voices_to_disable = Vec::new();
-        //
-        // let sum: i16 = self
-        //     // .voices
-        //     .active_voices
-        //     // .values_mut()
-        //     .iter()
-        //     // .filter(|voice| voice.enabled)
-        //     .fold(0, |sum, &note| {
-        //         let oscillator = &mut self.voices[note as usize];
-        //
-        //         if oscillator.volume() == 0 {
-        //             voices_to_disable.push(note);
-        //         }
-        //
-        //         let sample = oscillator.output();
-        //
-        //         sum.saturating_add(sample)
-        //     });
-        //
-        // voices_to_disable.iter().for_each(|note| {
-        //     self.active_voices.remove(note);
-        // });
-        //
+
         let sample = (sum as f64 * self.volume) as i16;
-        // let sample = sum;
 
         Some(sample)
     }
