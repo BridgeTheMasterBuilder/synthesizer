@@ -11,7 +11,7 @@ pub struct Voice {
     buffer: Option<i16>,
     env: Envelope,
     lfo: Oscillator,
-    // TODO create Modulator struct
+    // TODO create Modulator struct, implement modulator envelope, create another modulator to modulate the modulator?
     modulator: Oscillator,
     modulator_ratio: f64,
     modulator_amount: f64,
