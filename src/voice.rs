@@ -21,6 +21,7 @@ impl Voice {
     // const RATIO: f64 = 0.0;
     // const AMOUNT: f64 = 0.0;
 
+    // TODO vol as f64 / u16::MAX as f64?
     pub fn new(freq: f64, vol: u16) -> Self {
         Self {
             enabled: true,
@@ -71,9 +72,10 @@ impl Voice {
             - self.oscillator.freq();
         let new_freq = self.oscillator.freq() + delta * vibrato;
 
+        // TODO modulation depends on the frequency of the note?
         let vibrato_phase_incr = new_freq / SAMPLE_RATE as f64;
         let modulation = self.modulator.output();
-        let delta = (self.oscillator.freq() * self.modulator_amount) - self.oscillator.freq();
+        let delta = self.oscillator.freq() * self.modulator_amount;
         let new_freq = self.oscillator.freq() + delta * modulation;
 
         let modulator_phase_incr = new_freq / SAMPLE_RATE as f64;
@@ -94,12 +96,16 @@ impl Voice {
 
     pub fn set_modulator_ratio(&mut self, value: u8) {
         self.modulator_ratio = value as f64 / 8.0;
+        // self.modulator_ratio = value as f64;
+        // self.modulator
+        //     .set_freq(self.oscillator.freq() * self.modulator_ratio);
         self.modulator
             .set_freq(self.oscillator.freq() * self.modulator_ratio);
     }
 
     pub fn set_modulator_amount(&mut self, value: u8) {
         self.modulator_amount = value as f64 / 4.0;
+        // self.modulator_amount = value as f64;
     }
 
     pub fn set_waveform(&mut self, waveform: Waveform) {

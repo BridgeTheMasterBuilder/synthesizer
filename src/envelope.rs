@@ -53,6 +53,7 @@ impl Envelope {
         }
     }
 
+    // TODO if you release too fast then the note is sustained even if sustain is zero
     pub fn adjust_volume(&mut self) -> bool {
         match self.state {
             State::Waiting => false,
