@@ -36,6 +36,8 @@ const C3: u8 = 48;
 const H3: u8 = 59;
 const C4: u8 = 60;
 const C5: u8 = 72;
+const CIS5: u8 = 73;
+const C6: u8 = 84;
 const MIXER: u8 = 0;
 const MANUAL: u8 = 1;
 const CONTROL: u8 = 2;
@@ -87,26 +89,26 @@ pub fn run(options: Options) -> Result<()> {
                                 // 48..=59 => collecting = false,
                                 // 60..=72 if !collecting => {
                                 C3..=H3 => {
-                                    if !ignore_note_off {
-                                        synth.change_fundamental(current_fundamental);
-                                    }
+                                    // if !ignore_note_off {
+                                    synth.change_fundamental(current_fundamental);
+                                    // }
 
-                                    active_control_notes -= 1;
+                                    // active_control_notes -= 1;
 
-                                    if active_control_notes == 0 {
-                                        ignore_note_off = false;
-                                    }
+                                    // if active_control_notes == 0 {
+                                    //     ignore_note_off = false;
+                                    // }
                                 }
                                 C4..=C5 => {
-                                    if !ignore_note_off {
-                                        synth.change_tuning(note);
-                                    }
+                                    // if !ignore_note_off {
+                                    synth.change_tuning(note);
+                                    // }
 
-                                    active_control_notes -= 1;
-
-                                    if active_control_notes == 0 {
-                                        ignore_note_off = false;
-                                    }
+                                    // active_control_notes -= 1;
+                                    //
+                                    // if active_control_notes == 0 {
+                                    //     ignore_note_off = false;
+                                    // }
                                 }
                                 _ => (),
                             },
@@ -124,15 +126,21 @@ pub fn run(options: Options) -> Result<()> {
                             CONTROL => match note {
                                 C3..=H3 => {
                                     // collecting = true;
-                                    active_control_notes += 1;
+                                    // active_control_notes += 1;
 
-                                    temporary_fundamental = note;
+                                    // temporary_fundamental = note;
+                                    current_fundamental = note;
 
-                                    synth.change_fundamental(temporary_fundamental);
+                                    // synth.change_fundamental(temporary_fundamental);
+                                    synth.change_fundamental(current_fundamental);
                                 }
                                 C4..=C5 => {
-                                    active_control_notes += 1;
+                                    // active_control_notes += 1;
                                     synth.change_tuning(note);
+                                }
+                                CIS5..=C6 => {
+                                    // active_control_notes += 1;
+                                    synth.change_tuning(note - 12);
                                 }
                                 _ => (),
                             },
@@ -154,12 +162,12 @@ pub fn run(options: Options) -> Result<()> {
                         EXPRESSION => match param {
                             VOLUME => synth.set_gain(value as u16 * 512),
                             VIBRATO => synth.set_vibrato((value / 14) as f64),
-                            DAMPER => {
-                                if value == 127 {
-                                    ignore_note_off = true;
-                                    current_fundamental = temporary_fundamental;
-                                }
-                            }
+                            // DAMPER => {
+                            //     if value == 127 {
+                            //         ignore_note_off = true;
+                            //         current_fundamental = temporary_fundamental;
+                            //     }
+                            // }
                             _ => {}
                         },
                         MIXER => match param {

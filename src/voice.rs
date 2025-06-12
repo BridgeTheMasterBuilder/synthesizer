@@ -95,6 +95,7 @@ impl Voice {
     }
 
     pub fn set_modulator_ratio(&mut self, value: u8) {
+        // TODO fine tune
         self.modulator_ratio = value as f64 / 8.0;
         // self.modulator_ratio = value as f64;
         // self.modulator
@@ -104,6 +105,7 @@ impl Voice {
     }
 
     pub fn set_modulator_amount(&mut self, value: u8) {
+        // TODO fine tune
         self.modulator_amount = value as f64 / 4.0;
         // self.modulator_amount = value as f64;
     }

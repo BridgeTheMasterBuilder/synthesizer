@@ -53,7 +53,7 @@ impl Envelope {
         }
     }
 
-    // TODO if you release too fast then the note is sustained even if sustain is zero
+    // TODO if note is silenced during attack phase, self.target will get overwritten
     pub fn adjust_volume(&mut self) -> bool {
         match self.state {
             State::Waiting => false,
@@ -101,7 +101,13 @@ impl Envelope {
                 }
                 false
             }
-            State::Sustain => false,
+            State::Sustain => {
+                if self.target == 0 {
+                    self.state = State::Release
+                }
+
+                false
+            }
             State::Release => {
                 if self.release > 0 {
                     self.release -= 1;
@@ -205,7 +211,6 @@ impl Envelope {
     pub fn set_volume(&mut self, vol: u16) {
         if vol == 0 {
             self.target = 0;
-            self.state = State::Release
         } else {
             // self.target = vol * self.gain;
             // self.sustain = vol * 512 / Self::MAX_POLYPHONY;
@@ -228,9 +233,6 @@ impl Envelope {
     }
 
     pub fn volume(&self) -> u16 {
-        // if self.delay != Self::DELAY {
-        //     dbg!(&self);
-        // }
         (self.vol as f64 * self.gain) as u16
     }
 
