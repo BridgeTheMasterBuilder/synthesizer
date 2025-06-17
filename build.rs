@@ -24,7 +24,86 @@ fn emit_tables() -> Result<()> {
         Ok(())
     }
 
-    let mut file = File::create("src/tables.rs")?;
+    let mut file = File::create("synth/src/tables.rs")?;
+
+    writeln!(
+        file,
+        r##"#![allow(dead_code)]
+#[repr(usize)]
+pub enum Tuning {{
+    Pf_,
+    Pf3,
+    Pf5,
+    Pf3_5,
+    Pf7,
+    Pf3_7,
+    Pf5_7,
+    Pf3_5_7,
+    Pf11,
+    Pf3_11,
+    Pf5_11,
+    Pf3_5_11,
+    Pf7_11,
+    Pf3_7_11,
+    Pf5_7_11,
+    Pf3_5_7_11,
+    Pf13,
+    Pf3_13,
+    Pf5_13,
+    Pf3_5_13,
+    Pf7_13,
+    Pf3_7_13,
+    Pf5_7_13,
+    Pf3_5_7_13,
+    Pf11_13,
+    Pf3_11_13,
+    Pf5_11_13,
+    Pf3_5_11_13,
+    Pf7_11_13,
+    Pf3_7_11_13,
+    Pf5_7_11_13,
+    Pf3_5_7_11_13,
+    Pf17,
+    Pf17_3,
+    Pf17_5,
+    Pf17_3_5,
+    Pf17_7,
+    Pf17_3_7,
+    Pf17_5_7,
+    Pf17_3_5_7,
+    Pf17_11,
+    Pf17_3_11,
+    Pf17_5_11,
+    Pf17_3_5_11,
+    Pf17_7_11,
+    Pf17_3_7_11,
+    Pf17_5_7_11,
+    Pf17_3_5_7_11,
+    Pf17_13,
+    Pf17_3_13,
+    Pf17_5_13,
+    Pf17_3_5_13,
+    Pf17_7_13,
+    Pf17_3_7_13,
+    Pf17_5_7_13,
+    Pf17_3_5_7_13,
+    Pf17_11_13,
+    Pf17_3_11_13,
+    Pf17_5_11_13,
+    Pf17_3_5_11_13,
+    Pf17_7_11_13,
+    Pf17_3_7_11_13,
+    Pf17_5_7_11_13,
+    Pf17_3_5_7_11_13,
+}}
+
+pub const PYTHAGOREAN: Tuning = Tuning::Pf3;
+pub const FIVE_LIMIT: Tuning = Tuning::Pf3_5;
+pub const SEVEN_LIMIT: Tuning = Tuning::Pf3_5_7;
+pub const ELEVEN_LIMIT: Tuning = Tuning::Pf3_5_7_11;
+pub const THIRTEEN_LIMIT: Tuning = Tuning::Pf3_5_7_11_13;
+pub const SEVENTEEN_LIMIT: Tuning = Tuning::Pf17_3_5_7_11_13;"##
+    )?;
 
     writeln!(
         file,

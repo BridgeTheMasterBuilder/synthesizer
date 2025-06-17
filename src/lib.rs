@@ -4,18 +4,12 @@ use anyhow::Result;
 use bpaf::Bpaf;
 
 use crate::hw::IO;
-use crate::oscillator::Waveform;
-use crate::synth::Synth;
+use synth::oscillator::Waveform;
+use synth::Synth;
 
-mod envelope;
-pub mod file;
 pub mod hw;
 mod midi;
-mod oscillator;
 mod pcm;
-pub mod synth;
-mod tables;
-mod voice;
 
 #[derive(Bpaf)]
 #[bpaf(options)]
@@ -66,7 +60,7 @@ pub fn run(options: Options) -> Result<()> {
     let mut io = IO::new(main_port, aux_port, expr_port, mixer_port, &card)?;
     let mut synth = Synth::new();
 
-    // TODO implement sustain in synth.rs
+    // TODO implement sustain in lib
     loop {
         io.write(&mut synth)?;
 

@@ -8,11 +8,11 @@ use anyhow::Result;
 
 use crate::midi::MidiInputStream;
 use crate::pcm::OutputDevice;
-use crate::synth::Synth;
+use crate::Synth;
 
-pub const SAMPLE_RATE: u32 = 44100;
+pub const SAMPLE_RATE: u32 = synth::SAMPLE_RATE;
 
-pub type SF = i16;
+pub type SF = synth::SF;
 
 pub struct IO {
     input_stream: MidiInputStream,

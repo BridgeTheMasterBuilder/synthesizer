@@ -4,7 +4,7 @@ use alsa::{pcm, Direction, PollDescriptors, ValueOr, PCM};
 use anyhow::{anyhow, Result};
 
 use crate::hw::{SAMPLE_RATE, SF};
-use crate::synth::Synth;
+use synth::Synth;
 
 const BUFFER_SIZE: Frames = 512;
 const PERIOD_SIZE: Frames = BUFFER_SIZE / 4;

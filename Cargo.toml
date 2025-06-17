@@ -9,7 +9,7 @@ edition = "2021"
 alsa = "0.7.0"
 anyhow = "1.0.69"
 bpaf = { version = "0.7.8", features = ["derive"] }
-tables = { path = "tables" }
+synth = { path = "synth" }
 wav = "1.0.0"
 
 [dev-dependencies]
@@ -17,4 +17,3 @@ rustfft = "6.1.0"
 
 [build-dependencies]
 anyhow = "1.0.69"
-tables = { path = "tables" }
