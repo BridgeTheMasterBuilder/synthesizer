@@ -10,7 +10,7 @@ pub enum Waveform {
     Sawtooth,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub struct Oscillator {
     freq: f64,
     phase: f64,
@@ -54,7 +54,7 @@ impl Oscillator {
     pub fn output(&mut self) -> f64 {
         let sample = self.sample();
 
-        self.advance_phase(0.0);
+        self.advance_phase(None);
 
         sample
     }
@@ -68,8 +68,8 @@ impl Oscillator {
         }
     }
 
-    pub fn advance_phase(&mut self, incr: f64) {
-        self.phase += self.phase_incr + incr;
+    pub fn advance_phase(&mut self, incr: Option<f64>) {
+        self.phase += incr.unwrap_or(self.phase_incr);
 
         if self.phase >= 1.0 {
             self.phase -= 1.0;

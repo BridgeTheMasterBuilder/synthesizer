@@ -1,14 +1,14 @@
-use alsa::direct::pcm::MmapPlayback;
-use alsa::poll::poll;
 use alsa::Direction;
 use alsa::PollDescriptors;
+use alsa::direct::pcm::MmapPlayback;
+use alsa::poll::poll;
 // #[cfg(not(test))]
 use alsa::seq::Event;
 use anyhow::Result;
 
+use crate::Synth;
 use crate::midi::MidiInputStream;
 use crate::pcm::OutputDevice;
-use crate::Synth;
 
 pub const SAMPLE_RATE: u32 = synth::SAMPLE_RATE;
 
@@ -27,9 +27,11 @@ impl IO {
         aux_port: i32,
         expr_port: i32,
         mixer_port: i32,
+        pedal_port: i32,
         card: &str,
     ) -> Result<Self> {
-        let input_stream = MidiInputStream::new(main_port, aux_port, expr_port, mixer_port)?;
+        let input_stream =
+            MidiInputStream::new(main_port, aux_port, expr_port, mixer_port, pedal_port)?;
         let output_device = OutputDevice::new(card)?;
 
         let mut fds = output_device.get()?;

@@ -7,6 +7,7 @@ use crate::oscillator::Waveform;
 use crate::tables::TABLES;
 use crate::voice::Voice;
 mod envelope;
+mod modulator;
 pub mod oscillator;
 mod tables;
 mod voice;
@@ -15,7 +16,6 @@ pub const SAMPLE_RATE: u32 = 44100;
 
 pub type SF = i16;
 
-// TODO implement sustain in here
 #[derive(Clone)]
 pub struct Synth {
     voices: [Voice; 109],
@@ -24,6 +24,8 @@ pub struct Synth {
     last_note: u8,
     last_freq: f64,
     volume: f64,
+    sustain: bool,
+    sustained_voices: BTreeSet<u8>,
 }
 
 // TODO Refactor with forall_voices or something similar
@@ -39,6 +41,8 @@ impl Synth {
             last_note: 60,
             last_freq: 264.0,
             volume: 1.0,
+            sustain: false,
+            sustained_voices: BTreeSet::new(),
         }
     }
 
@@ -114,9 +118,15 @@ impl Synth {
         let voice = &mut self.voices[note as usize];
         voice.enabled = true;
         voice.set_freq(freq);
-        voice.set_volume(vol);
+        voice.env.set_volume(vol);
+        voice.modulator1_env.set_volume(255);
+        voice.modulator2_env.set_volume(255);
 
         self.active_voices.insert(note);
+
+        if self.sustain {
+            self.sustained_voices.insert(note);
+        }
     }
 
     pub fn set_vibrato(&mut self, freq: f64) {
@@ -153,47 +163,70 @@ impl Synth {
     // }
 
     pub fn silence(&mut self, note: u8) {
-        self.voices[note as usize].set_volume(0);
-
         self.active_voices.remove(&note);
+
+        if !self.sustained_voices.contains(&note) {
+            self.voices[note as usize].env.set_volume(0);
+        }
     }
 
-    pub fn set_modulator_ratio(&mut self, value: u8) {
+    pub fn set_modulator1_ratio(&mut self, value: u8) {
         self.voices
             .iter_mut()
-            .for_each(|oscillator| oscillator.set_modulator_ratio(value));
+            .for_each(|voice| voice.modulator1.set_ratio(value, voice.oscillator.freq()));
     }
-    pub fn set_modulator_amount(&mut self, value: u8) {
+    pub fn set_modulator1_amount(&mut self, value: u8) {
         self.voices
             .iter_mut()
-            .for_each(|oscillator| oscillator.set_modulator_amount(value));
+            .for_each(|voice| voice.modulator1.set_amount(value));
     }
 
+    pub fn set_modulator2_ratio(&mut self, value: u8) {
+        self.voices.iter_mut().for_each(|voice| {
+            voice
+                .modulator2
+                .set_ratio(value, voice.modulator1.oscillator.freq())
+        });
+    }
+    pub fn set_modulator2_amount(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator2.set_amount(value));
+    }
     pub fn set_waveform(&mut self, waveform: Waveform) {
         self.voices
             .iter_mut()
-            .for_each(|voice| voice.set_waveform(waveform));
+            .for_each(|voice| voice.oscillator.set_waveform(waveform));
     }
 
-    pub fn set_modulator_waveform(&mut self, waveform: Waveform) {
+    pub fn set_modulator1_waveform(&mut self, waveform: Waveform) {
         self.voices
             .iter_mut()
-            .for_each(|voice| voice.set_modulator_waveform(waveform));
+            .for_each(|voice| voice.modulator1.oscillator.set_waveform(waveform));
     }
 
+    pub fn set_modulator2_waveform(&mut self, waveform: Waveform) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator2.oscillator.set_waveform(waveform));
+    }
     pub fn set_duty(&mut self, value: f64) {
         self.voices
             .iter_mut()
-            .for_each(|voice| voice.set_duty(value));
+            .for_each(|voice| voice.oscillator.set_duty(value));
     }
 
-    pub fn set_modulator_duty(&mut self, value: f64) {
+    pub fn set_modulator1_duty(&mut self, value: f64) {
         self.voices
             .iter_mut()
-            .for_each(|voice| voice.set_modulator_duty(value));
+            .for_each(|voice| voice.modulator1.oscillator.set_duty(value));
+    }
+    pub fn set_modulator2_duty(&mut self, value: f64) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator2.oscillator.set_duty(value));
     }
 
-    // TODO make the envelope public so you don't need these wrappers?
     pub fn set_gain(&mut self, value: u16) {
         self.voices
             .iter_mut()
@@ -203,25 +236,102 @@ impl Synth {
     pub fn set_attack(&mut self, value: u8) {
         self.voices
             .iter_mut()
-            .for_each(|voice| voice.set_attack(value));
+            .for_each(|voice| voice.env.set_attack(value));
     }
 
     pub fn set_decay(&mut self, value: u8) {
         self.voices
             .iter_mut()
-            .for_each(|voice| voice.set_decay(value));
+            .for_each(|voice| voice.env.set_decay(value));
     }
 
     pub fn set_sustain(&mut self, value: u8) {
         self.voices
             .iter_mut()
-            .for_each(|voice| voice.set_sustain(value));
+            .for_each(|voice| voice.env.set_sustain(value));
     }
 
     pub fn set_release(&mut self, value: u8) {
         self.voices
             .iter_mut()
-            .for_each(|voice| voice.set_release(value));
+            .for_each(|voice| voice.env.set_release(value));
+    }
+
+    pub fn enable_sustain(&mut self) {
+        self.sustain = true;
+
+        for &note in self.active_voices.iter() {
+            self.sustained_voices.insert(note);
+        }
+    }
+
+    pub fn disable_sustain(&mut self) {
+        self.sustain = false;
+
+        for note in self.sustained_voices.iter() {
+            if !self.active_voices.contains(&note) {
+                self.voices[*note as usize].env.set_volume(0);
+            }
+        }
+
+        self.sustained_voices.clear();
+    }
+    pub fn set_modulator1_attack(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator1_env.set_attack(value));
+    }
+
+    pub fn set_modulator1_decay(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator1_env.set_decay(value));
+    }
+
+    pub fn set_modulator1_sustain(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator1_env.set_sustain(value));
+    }
+
+    pub fn set_modulator1_release(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator1_env.set_release(value));
+    }
+    pub fn set_modulator2_attack(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator2_env.set_attack(value));
+    }
+
+    pub fn set_modulator2_decay(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator2_env.set_decay(value));
+    }
+
+    pub fn set_modulator2_sustain(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator2_env.set_sustain(value));
+    }
+
+    pub fn set_modulator2_release(&mut self, value: u8) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator2_env.set_release(value));
+    }
+
+    pub fn toggle_modulator1_env_repeat(&mut self) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator1_env.toggle_repeat());
+    }
+    pub fn toggle_modulator2_env_repeat(&mut self) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator2_env.toggle_repeat());
     }
 }
 

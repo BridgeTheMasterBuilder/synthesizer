@@ -9,9 +9,15 @@ pub struct MidiInputStream {
 }
 
 impl MidiInputStream {
-    pub fn new(main_port: i32, aux_port: i32, expr_port: i32, mixer_port: i32) -> Result<Self> {
+    pub fn new(
+        main_port: i32,
+        aux_port: i32,
+        expr_port: i32,
+        mixer_port: i32,
+        pedal_port: i32,
+    ) -> Result<Self> {
         Ok(Self {
-            device: Self::open_midi_device(main_port, aux_port, expr_port, mixer_port)?,
+            device: Self::open_midi_device(main_port, aux_port, expr_port, mixer_port, pedal_port)?,
         })
     }
 
@@ -28,6 +34,7 @@ impl MidiInputStream {
         aux_port: i32,
         expr_port: i32,
         mixer_port: i32,
+        pedal_port: i32,
     ) -> Result<alsa::Seq> {
         let s = alsa::Seq::open(None, Some(alsa::Direction::Capture), true)?;
 
@@ -41,7 +48,7 @@ impl MidiInputStream {
         s.create_port(&dinfo).unwrap();
         let dport = dinfo.get_port();
 
-        let clients: Vec<PortInfo> = [main_port, aux_port, expr_port, mixer_port]
+        let clients: Vec<PortInfo> = [main_port, aux_port, expr_port, mixer_port, pedal_port]
             .into_iter()
             .map(|p| {
                 seq::ClientIter::new(&s)

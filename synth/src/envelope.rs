@@ -1,4 +1,4 @@
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 enum State {
     Waiting,
     Attack,
@@ -6,7 +6,7 @@ enum State {
     Sustain,
     Release,
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub struct Envelope {
     enabled: bool,
     gain: f64,
@@ -21,6 +21,7 @@ pub struct Envelope {
     release: u32,
     release_reload: u32,
     state: State,
+    repeat: bool,
 }
 
 impl Envelope {
@@ -29,7 +30,14 @@ impl Envelope {
     pub const INCR: u16 = 1;
     pub const FACTOR: u32 = 1;
 
-    pub fn new(gain: f64, attack: u32, decay: u32, sustain: u16, release: u32) -> Self {
+    pub fn new(
+        gain: f64,
+        attack: u32,
+        decay: u32,
+        sustain: u16,
+        release: u32,
+        automatic: bool,
+    ) -> Self {
         Self {
             enabled: false,
             gain,
@@ -44,6 +52,7 @@ impl Envelope {
             release: release * Self::FACTOR,
             release_reload: release * Self::FACTOR,
             state: State::Waiting,
+            repeat: automatic,
         }
     }
 
@@ -94,7 +103,7 @@ impl Envelope {
                 false
             }
             State::Sustain => {
-                if !self.enabled {
+                if !self.enabled || self.repeat {
                     self.target = 0;
                     self.state = State::Release
                 }
@@ -119,7 +128,11 @@ impl Envelope {
                         return false;
                     }
 
-                    self.state = State::Waiting;
+                    if self.repeat {
+                        self.set_volume(255);
+                    } else {
+                        self.state = State::Waiting;
+                    }
 
                     true
                 }
@@ -148,6 +161,10 @@ impl Envelope {
         (self.vol as f64 * self.gain) as u16
     }
 
+    pub fn normalized_volume(&self) -> f64 {
+        self.vol as f64 * self.gain / Self::PEAK as f64
+    }
+
     pub fn set_attack(&mut self, value: u8) {
         self.attack_reload = (value + 1) as u32;
     }
@@ -162,5 +179,9 @@ impl Envelope {
 
     pub fn set_release(&mut self, value: u8) {
         self.release_reload = (value + 1) as u32;
+    }
+
+    pub fn toggle_repeat(&mut self) {
+        self.repeat = !self.repeat;
     }
 }

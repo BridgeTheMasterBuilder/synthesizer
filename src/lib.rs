@@ -4,8 +4,8 @@ use anyhow::Result;
 use bpaf::Bpaf;
 
 use crate::hw::IO;
-use synth::oscillator::Waveform;
 use synth::Synth;
+use synth::oscillator::Waveform;
 
 pub mod hw;
 mod midi;
@@ -22,10 +22,18 @@ pub struct Options {
     pub expr_port: i32,
     #[bpaf(short('m'), long, argument)]
     pub mixer_port: i32,
+    #[bpaf(short('f'), long, argument)]
+    pub pedal_port: i32,
     #[bpaf(short('c'), long, argument)]
     pub card: String,
 }
 
+const C1: u8 = 24;
+const CIS1: u8 = 25;
+const D1: u8 = 26;
+const H1: u8 = 35;
+const C2: u8 = 36;
+const H2: u8 = 47;
 const C3: u8 = 48;
 const H3: u8 = 59;
 const C4: u8 = 60;
@@ -36,31 +44,46 @@ const MIXER: u8 = 0;
 const MANUAL: u8 = 1;
 const CONTROL: u8 = 2;
 const EXPRESSION: u8 = 3;
+const PEDALS: u8 = 4;
 const VOLUME: u32 = 21;
 const VIBRATO: u32 = 22;
 const DAMPER: u32 = 64;
 const WAVEFORM: u32 = 16;
-const MODULATOR_WAVEFORM: u32 = 17;
 const DUTY: u32 = 20;
-const MODULATOR_RATIO: u32 = 25;
-const MODULATOR_AMOUNT: u32 = 29;
-const MODULATOR_DUTY: u32 = 21;
 const ATTACK: u32 = 46;
 const DECAY: u32 = 50;
 const SUSTAIN: u32 = 54;
 const RELEASE: u32 = 58;
+const MODULATOR1_WAVEFORM: u32 = 17;
+const MODULATOR1_DUTY: u32 = 21;
+const MODULATOR1_RATIO: u32 = 25;
+const MODULATOR1_AMOUNT: u32 = 29;
+const MODULATOR1_ATTACK: u32 = 47;
+const MODULATOR1_DECAY: u32 = 51;
+const MODULATOR1_SUSTAIN: u32 = 55;
+const MODULATOR1_RELEASE: u32 = 59;
+const MODULATOR2_WAVEFORM: u32 = 18;
+const MODULATOR2_DUTY: u32 = 22;
+const MODULATOR2_RATIO: u32 = 26;
+const MODULATOR2_AMOUNT: u32 = 30;
+const MODULATOR2_ATTACK: u32 = 48;
+const MODULATOR2_DECAY: u32 = 52;
+const MODULATOR2_SUSTAIN: u32 = 56;
+const MODULATOR2_RELEASE: u32 = 60;
 
 pub fn run(options: Options) -> Result<()> {
     let main_port = options.main_port;
     let aux_port = options.aux_port;
     let expr_port = options.expr_port;
     let mixer_port = options.mixer_port;
+    let pedal_port = options.pedal_port;
     let card = options.card;
 
-    let mut io = IO::new(main_port, aux_port, expr_port, mixer_port, &card)?;
+    let mut io = IO::new(
+        main_port, aux_port, expr_port, mixer_port, pedal_port, &card,
+    )?;
     let mut synth = Synth::new();
 
-    // TODO implement sustain in lib
     loop {
         io.write(&mut synth)?;
 
@@ -70,17 +93,26 @@ pub fn run(options: Options) -> Result<()> {
                     if let Some(EvNote { channel, note, .. }) = event.get_data() {
                         match channel {
                             CONTROL => match note {
-                                C3..=H3 => {
-                                    synth.change_fundamental(note);
-                                }
+                                // C3..=H3 => {
+                                //     synth.change_fundamental(note);
+                                // }
                                 C4..=C5 => {
                                     synth.change_tuning(note);
                                 }
                                 _ => (),
                             },
-
                             MANUAL => synth.silence(note),
-                            _ => unreachable!(),
+                            PEDALS => match note {
+                                // C1..=H1 => {
+                                //     synth.change_fundamental(note);
+                                // }
+                                C2..=H2 => {
+                                    synth.change_tuning(note + 24);
+                                }
+                                _ => (),
+                            },
+                            // _ => unreachable!(),
+                            _ => {}
                         }
                     }
                 }
@@ -102,7 +134,26 @@ pub fn run(options: Options) -> Result<()> {
                             MANUAL => {
                                 synth.play(note);
                             }
-                            _ => unreachable!(),
+                            PEDALS => match note {
+                                C1..=H1 => {
+                                    synth.change_fundamental(note + 24);
+                                }
+                                C2..=C3 => {
+                                    synth.change_tuning(note + 24);
+                                }
+                                _ => (),
+                            },
+                            MIXER => match note {
+                                CIS1 => {
+                                    synth.toggle_modulator1_env_repeat();
+                                }
+                                D1 => {
+                                    synth.toggle_modulator2_env_repeat();
+                                }
+                                _ => {}
+                            },
+                            // _ => unreachable!(),
+                            _ => {}
                         }
                     }
                 }
@@ -113,16 +164,19 @@ pub fn run(options: Options) -> Result<()> {
                         channel,
                         ..
                     }) => match channel {
+                        MANUAL => match param {
+                            DAMPER => {
+                                if value == 127 {
+                                    synth.enable_sustain()
+                                } else {
+                                    synth.disable_sustain()
+                                }
+                            }
+                            _ => {}
+                        },
                         EXPRESSION => match param {
                             VOLUME => synth.set_gain(value as u16 * 512),
                             VIBRATO => synth.set_vibrato((value / 14) as f64),
-                            // TODO call synth.sustain()
-                            // DAMPER => {
-                            //     if value == 127 {
-                            //         ignore_note_off = true;
-                            //         current_fundamental = temporary_fundamental;
-                            //     }
-                            // }
                             _ => {}
                         },
                         MIXER => match param {
@@ -136,7 +190,7 @@ pub fn run(options: Options) -> Result<()> {
                                 };
                                 synth.set_waveform(waveform);
                             }
-                            MODULATOR_WAVEFORM => {
+                            MODULATOR1_WAVEFORM => {
                                 let waveform = match value / (128 / 4) {
                                     0 => Waveform::Sine,
                                     1 => Waveform::Pulse,
@@ -144,12 +198,33 @@ pub fn run(options: Options) -> Result<()> {
                                     3 => Waveform::Sawtooth,
                                     _ => unreachable!(),
                                 };
-                                synth.set_modulator_waveform(waveform);
+                                synth.set_modulator1_waveform(waveform);
+                            }
+                            MODULATOR2_WAVEFORM => {
+                                let waveform = match value / (128 / 4) {
+                                    0 => Waveform::Sine,
+                                    1 => Waveform::Pulse,
+                                    2 => Waveform::Triangle,
+                                    3 => Waveform::Sawtooth,
+                                    _ => unreachable!(),
+                                };
+                                synth.set_modulator2_waveform(waveform);
                             }
                             DUTY => synth.set_duty(value as f64 / 127.0),
-                            MODULATOR_RATIO => synth.set_modulator_ratio(value as u8),
-                            MODULATOR_AMOUNT => synth.set_modulator_amount(value as u8),
-                            MODULATOR_DUTY => synth.set_modulator_duty(value as f64 / 127.0),
+                            MODULATOR1_RATIO => synth.set_modulator1_ratio(value as u8),
+                            MODULATOR1_AMOUNT => synth.set_modulator1_amount(value as u8),
+                            MODULATOR1_DUTY => synth.set_modulator1_duty(value as f64 / 127.0),
+                            MODULATOR1_ATTACK => synth.set_modulator1_attack(value as u8),
+                            MODULATOR1_DECAY => synth.set_modulator1_decay(value as u8),
+                            MODULATOR1_SUSTAIN => synth.set_modulator1_sustain(value as u8),
+                            MODULATOR1_RELEASE => synth.set_modulator1_release(value as u8),
+                            MODULATOR2_RATIO => synth.set_modulator2_ratio(value as u8),
+                            MODULATOR2_AMOUNT => synth.set_modulator2_amount(value as u8),
+                            MODULATOR2_DUTY => synth.set_modulator2_duty(value as f64 / 227.0),
+                            MODULATOR2_ATTACK => synth.set_modulator2_attack(value as u8),
+                            MODULATOR2_DECAY => synth.set_modulator2_decay(value as u8),
+                            MODULATOR2_SUSTAIN => synth.set_modulator2_sustain(value as u8),
+                            MODULATOR2_RELEASE => synth.set_modulator2_release(value as u8),
                             ATTACK => synth.set_attack(value as u8),
                             DECAY => synth.set_decay(value as u8),
                             SUSTAIN => synth.set_sustain(value as u8),
