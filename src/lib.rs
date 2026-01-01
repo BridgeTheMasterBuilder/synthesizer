@@ -4,8 +4,8 @@ use anyhow::Result;
 use bpaf::Bpaf;
 
 use crate::hw::IO;
-use synth::Synth;
 use synth::oscillator::Waveform;
+use synth::{Mode, Synth, SynthSetting};
 
 pub mod hw;
 mod midi;
@@ -26,6 +26,10 @@ pub struct Options {
     pub pedal_port: i32,
     #[bpaf(short('c'), long, argument)]
     pub card: String,
+    #[bpaf(short('s'), long, argument)]
+    pub settings_filename: Option<String>,
+    #[bpaf(short('t'), long, argument)]
+    pub tuning_preset_filename: Option<String>,
 }
 
 const C0: u8 = 12;
@@ -71,6 +75,39 @@ const MODULATOR2_ATTACK: u32 = 48;
 const MODULATOR2_DECAY: u32 = 52;
 const MODULATOR2_SUSTAIN: u32 = 56;
 const MODULATOR2_RELEASE: u32 = 60;
+const TIMBRE_BANK_1: u8 = 1;
+const TIMBRE_BANK_2: u8 = 4;
+const TIMBRE_BANK_3: u8 = 7;
+const TIMBRE_BANK_4: u8 = 10;
+const TIMBRE_BANK_5: u8 = 13;
+const TIMBRE_BANK_6: u8 = 16;
+const TIMBRE_BANK_7: u8 = 19;
+const TIMBRE_BANK_8: u8 = 22;
+const TUNING_BANK_1: u8 = 3;
+const TUNING_BANK_2: u8 = 6;
+const TUNING_BANK_3: u8 = 9;
+const TUNING_BANK_4: u8 = 12;
+const TUNING_BANK_5: u8 = 15;
+const TUNING_BANK_6: u8 = 18;
+const TUNING_BANK_7: u8 = 21;
+const TUNING_BANK_8: u8 = 24;
+
+fn parse_settings_file(settings_filename: String) -> [SynthSetting; 8] {
+    [
+        SynthSetting::default(),
+        SynthSetting::default(),
+        SynthSetting::default(),
+        SynthSetting::default(),
+        SynthSetting::default(),
+        SynthSetting::default(),
+        SynthSetting::default(),
+        SynthSetting::default(),
+    ]
+}
+
+fn parse_tuning_preset_file(tuning_preset_filename: String) -> Option<[[f64; 128]; 8]> {
+    None
+}
 
 pub fn run(options: Options) -> Result<()> {
     let main_port = options.main_port;
@@ -79,11 +116,31 @@ pub fn run(options: Options) -> Result<()> {
     let mixer_port = options.mixer_port;
     let pedal_port = options.pedal_port;
     let card = options.card;
+    let settings_filename = options.settings_filename;
+    let tuning_preset_filename = options.tuning_preset_filename;
+
+    let settings = settings_filename.map_or(
+        [
+            SynthSetting::default(),
+            SynthSetting::default(),
+            SynthSetting::default(),
+            SynthSetting::default(),
+            SynthSetting::default(),
+            SynthSetting::default(),
+            SynthSetting::default(),
+            SynthSetting::default(),
+        ],
+        |filename| parse_settings_file(filename),
+    );
+    let tuning_preset =
+        tuning_preset_filename.map_or(None, |filename| parse_tuning_preset_file(filename));
 
     let mut io = IO::new(
         main_port, aux_port, expr_port, mixer_port, pedal_port, &card,
     )?;
-    let mut synth = Synth::new();
+    let mut synth = Synth::new(settings, tuning_preset);
+    // let mut control = Synth::new();
+    // let mut pedals = Synth::new();
 
     loop {
         io.write(&mut synth)?;
@@ -92,75 +149,140 @@ pub fn run(options: Options) -> Result<()> {
             match event.get_type() {
                 EventType::Noteoff => {
                     if let Some(EvNote { channel, note, .. }) = event.get_data() {
-                        match channel {
-                            CONTROL => match note {
-                                // C3..=H3 => {
-                                //     synth.change_fundamental(note);
-                                // }
-                                C4..=C5 => {
-                                    synth.change_tuning(note);
-                                }
-                                _ => (),
+                        match synth.mode {
+                            Mode::Fixed => match channel {
+                                // TODO
+                                // CONTROL => control.silence(note),
+                                // MANUAL => synth.silence(note),
+                                // PEDALS => pedals.silence(note),
+                                // _ => {}
+                                _ => synth.silence(note),
                             },
-                            MANUAL => synth.silence(note),
-                            PEDALS => match note {
-                                // C1..=H1 => {
-                                //     synth.change_fundamental(note);
-                                // }
-                                C1..=H1 => {
-                                    synth.change_tuning(note + 36);
+                            Mode::Dynamic => {
+                                match channel {
+                                    CONTROL => match note {
+                                        // C3..=H3 => {
+                                        //     synth.change_fundamental(note);
+                                        // }
+                                        C4..=C5 => {
+                                            synth.change_tuning(note);
+                                        }
+                                        _ => (),
+                                    },
+                                    MANUAL => synth.silence(note),
+                                    PEDALS => match note {
+                                        // C1..=H1 => {
+                                        //     synth.change_fundamental(note);
+                                        // }
+                                        C1..=H1 => {
+                                            synth.change_tuning(note + 36);
+                                        }
+                                        C2..=C5 => {
+                                            synth.silence(note - 24);
+                                        }
+                                        _ => (),
+                                    },
+                                    // _ => unreachable!(),
+                                    _ => {}
                                 }
-                                C2..=C5 => {
-                                    synth.silence(note - 24);
-                                }
-                                _ => (),
-                            },
-                            // _ => unreachable!(),
-                            _ => {}
+                            }
                         }
                     }
                 }
                 EventType::Noteon => {
                     if let Some(EvNote { channel, note, .. }) = event.get_data() {
-                        match channel {
-                            CONTROL => match note {
-                                C3..=H3 => {
-                                    synth.change_fundamental(note);
-                                }
-                                C4..=C5 => {
-                                    synth.change_tuning(note);
-                                }
-                                CIS5..=C6 => {
-                                    synth.change_tuning(note - 12);
-                                }
-                                _ => (),
+                        match synth.mode {
+                            Mode::Fixed => match channel {
+                                MIXER => match note {
+                                    CIS1 => {
+                                        synth.toggle_modulator1_env_repeat();
+                                    }
+                                    D1 => {
+                                        synth.toggle_modulator2_env_repeat();
+                                    }
+                                    TIMBRE_BANK_1 => synth.change_timbre_bank(0),
+                                    TIMBRE_BANK_2 => synth.change_timbre_bank(1),
+                                    TIMBRE_BANK_3 => synth.change_timbre_bank(2),
+                                    TIMBRE_BANK_4 => synth.change_timbre_bank(3),
+                                    TIMBRE_BANK_5 => synth.change_timbre_bank(4),
+                                    TIMBRE_BANK_6 => synth.change_timbre_bank(5),
+                                    TIMBRE_BANK_7 => synth.change_timbre_bank(6),
+                                    TIMBRE_BANK_8 => synth.change_timbre_bank(7),
+                                    TUNING_BANK_1 => synth.change_tuning_bank(0),
+                                    TUNING_BANK_2 => synth.change_tuning_bank(1),
+                                    TUNING_BANK_3 => synth.change_tuning_bank(2),
+                                    TUNING_BANK_4 => synth.change_tuning_bank(3),
+                                    TUNING_BANK_5 => synth.change_tuning_bank(4),
+                                    TUNING_BANK_6 => synth.change_tuning_bank(5),
+                                    TUNING_BANK_7 => synth.change_tuning_bank(6),
+                                    TUNING_BANK_8 => synth.change_tuning_bank(7),
+                                    _ => {}
+                                },
+                                // TODO
+                                // CONTROL => control.play(note),
+                                // MANUAL => synth.play(note),
+                                // PEDALS => pedals.play(note),
+                                // _ => {}
+                                _ => synth.play_fixed(note),
                             },
-                            MANUAL => {
-                                synth.play(note);
+                            Mode::Dynamic => {
+                                match channel {
+                                    CONTROL => match note {
+                                        C3..=H3 => {
+                                            synth.change_fundamental(note);
+                                        }
+                                        C4..=C5 => {
+                                            synth.change_tuning(note);
+                                        }
+                                        CIS5..=C6 => {
+                                            synth.change_tuning(note - 12);
+                                        }
+                                        _ => (),
+                                    },
+                                    MANUAL => {
+                                        synth.play(note);
+                                    }
+                                    PEDALS => match note {
+                                        C0..=H0 => {
+                                            synth.change_fundamental(note + 36);
+                                        }
+                                        C1..=H1 => {
+                                            synth.change_tuning(note + 36);
+                                        }
+                                        C2..=C5 => {
+                                            synth.play(note - 24);
+                                        }
+                                        _ => (),
+                                    },
+                                    MIXER => match note {
+                                        CIS1 => {
+                                            synth.toggle_modulator1_env_repeat();
+                                        }
+                                        D1 => {
+                                            synth.toggle_modulator2_env_repeat();
+                                        }
+                                        TIMBRE_BANK_1 => synth.change_timbre_bank(0),
+                                        TIMBRE_BANK_2 => synth.change_timbre_bank(1),
+                                        TIMBRE_BANK_3 => synth.change_timbre_bank(2),
+                                        TIMBRE_BANK_4 => synth.change_timbre_bank(3),
+                                        TIMBRE_BANK_5 => synth.change_timbre_bank(4),
+                                        TIMBRE_BANK_6 => synth.change_timbre_bank(5),
+                                        TIMBRE_BANK_7 => synth.change_timbre_bank(6),
+                                        TIMBRE_BANK_8 => synth.change_timbre_bank(7),
+                                        TUNING_BANK_1 => synth.change_tuning_bank(0),
+                                        TUNING_BANK_2 => synth.change_tuning_bank(1),
+                                        TUNING_BANK_3 => synth.change_tuning_bank(2),
+                                        TUNING_BANK_4 => synth.change_tuning_bank(3),
+                                        TUNING_BANK_5 => synth.change_tuning_bank(4),
+                                        TUNING_BANK_6 => synth.change_tuning_bank(5),
+                                        TUNING_BANK_7 => synth.change_tuning_bank(6),
+                                        TUNING_BANK_8 => synth.change_tuning_bank(7),
+                                        _ => {}
+                                    },
+                                    // _ => unreachable!(),
+                                    _ => {}
+                                }
                             }
-                            PEDALS => match note {
-                                C0..=H0 => {
-                                    synth.change_fundamental(note + 36);
-                                }
-                                C1..=H1 => {
-                                    synth.change_tuning(note + 36);
-                                }
-                                C2..=C5 => {
-                                    synth.play(note - 24);
-                                }
-                                _ => (),
-                            },
-                            MIXER => match note {
-                                CIS1 => {
-                                    synth.toggle_modulator1_env_repeat();
-                                }
-                                D1 => {
-                                    synth.toggle_modulator2_env_repeat();
-                                }
-                                _ => {}
-                            },
-                            // _ => unreachable!(),
-                            _ => {}
                         }
                     }
                 }
@@ -217,17 +339,17 @@ pub fn run(options: Options) -> Result<()> {
                                 };
                                 synth.set_modulator2_waveform(waveform);
                             }
-                            DUTY => synth.set_duty(value as f64 / 127.0),
+                            DUTY => synth.set_duty(value as u8),
                             MODULATOR1_RATIO => synth.set_modulator1_ratio(value as u8),
                             MODULATOR1_AMOUNT => synth.set_modulator1_amount(value as u8),
-                            MODULATOR1_DUTY => synth.set_modulator1_duty(value as f64 / 127.0),
+                            MODULATOR1_DUTY => synth.set_modulator1_duty(value as u8),
                             MODULATOR1_ATTACK => synth.set_modulator1_attack(value as u8),
                             MODULATOR1_DECAY => synth.set_modulator1_decay(value as u8),
                             MODULATOR1_SUSTAIN => synth.set_modulator1_sustain(value as u8),
                             MODULATOR1_RELEASE => synth.set_modulator1_release(value as u8),
                             MODULATOR2_RATIO => synth.set_modulator2_ratio(value as u8),
                             MODULATOR2_AMOUNT => synth.set_modulator2_amount(value as u8),
-                            MODULATOR2_DUTY => synth.set_modulator2_duty(value as f64 / 227.0),
+                            MODULATOR2_DUTY => synth.set_modulator2_duty(value as u8),
                             MODULATOR2_ATTACK => synth.set_modulator2_attack(value as u8),
                             MODULATOR2_DECAY => synth.set_modulator2_decay(value as u8),
                             MODULATOR2_SUSTAIN => synth.set_modulator2_sustain(value as u8),

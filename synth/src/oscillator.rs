@@ -2,8 +2,9 @@ use std::f64::consts::TAU;
 
 use crate::SAMPLE_RATE;
 
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug, Copy, Default)]
 pub enum Waveform {
+    #[default]
     Sine,
     Pulse,
     Triangle,
@@ -47,8 +48,8 @@ impl Oscillator {
         self.waveform = waveform;
     }
 
-    pub fn set_duty(&mut self, duty: f64) {
-        self.duty = duty;
+    pub fn set_duty(&mut self, duty: u8) {
+        self.duty = duty as f64 / 127.0;
     }
 
     pub fn output(&mut self) -> f64 {
