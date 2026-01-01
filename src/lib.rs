@@ -28,12 +28,13 @@ pub struct Options {
     pub card: String,
 }
 
+const C0: u8 = 12;
+const H0: u8 = 23;
 const C1: u8 = 24;
 const CIS1: u8 = 25;
 const D1: u8 = 26;
 const H1: u8 = 35;
 const C2: u8 = 36;
-const H2: u8 = 47;
 const C3: u8 = 48;
 const H3: u8 = 59;
 const C4: u8 = 60;
@@ -106,8 +107,11 @@ pub fn run(options: Options) -> Result<()> {
                                 // C1..=H1 => {
                                 //     synth.change_fundamental(note);
                                 // }
-                                C2..=H2 => {
-                                    synth.change_tuning(note + 24);
+                                C1..=H1 => {
+                                    synth.change_tuning(note + 36);
+                                }
+                                C2..=C5 => {
+                                    synth.silence(note - 24);
                                 }
                                 _ => (),
                             },
@@ -135,11 +139,14 @@ pub fn run(options: Options) -> Result<()> {
                                 synth.play(note);
                             }
                             PEDALS => match note {
-                                C1..=H1 => {
-                                    synth.change_fundamental(note + 24);
+                                C0..=H0 => {
+                                    synth.change_fundamental(note + 36);
                                 }
-                                C2..=C3 => {
-                                    synth.change_tuning(note + 24);
+                                C1..=H1 => {
+                                    synth.change_tuning(note + 36);
+                                }
+                                C2..=C5 => {
+                                    synth.play(note - 24);
                                 }
                                 _ => (),
                             },

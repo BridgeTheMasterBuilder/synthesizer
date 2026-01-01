@@ -33,6 +33,7 @@ impl Synth {
     const VOLUME: u8 = 127;
 
     // TODO Magic numbers
+    // TODO active_tuning to ignore tuning note offs when fixing
     pub fn new() -> Self {
         Self {
             voices: array::from_fn(|_| Voice::new(0.0, 0)),
