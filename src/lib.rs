@@ -1,9 +1,11 @@
+use crate::hw::IO;
 use ::alsa::seq::EventType;
 use alsa::seq::{EvCtrl, EvNote};
 use anyhow::Result;
 use bpaf::Bpaf;
-
-use crate::hw::IO;
+use std::fs::File;
+use std::io::Read;
+use std::str::FromStr;
 use synth::oscillator::Waveform;
 use synth::{Mode, Synth, SynthSetting};
 
@@ -91,9 +93,10 @@ const TUNING_BANK_5: u8 = 15;
 const TUNING_BANK_6: u8 = 18;
 const TUNING_BANK_7: u8 = 21;
 const TUNING_BANK_8: u8 = 24;
+const SAVE_TIMBRE_PRESETS: u8 = 27;
 
-fn parse_settings_file(settings_filename: String) -> [SynthSetting; 8] {
-    [
+fn parse_settings_file(settings_filename: &str) -> [SynthSetting; 8] {
+    let mut settings: [SynthSetting; 8] = [
         SynthSetting::default(),
         SynthSetting::default(),
         SynthSetting::default(),
@@ -102,7 +105,32 @@ fn parse_settings_file(settings_filename: String) -> [SynthSetting; 8] {
         SynthSetting::default(),
         SynthSetting::default(),
         SynthSetting::default(),
-    ]
+    ];
+
+    if let Ok(mut settings_file) = File::open(settings_filename) {
+        let mut data = Vec::new();
+
+        if settings_file.read_to_end(&mut data).is_ok() {
+            settings = serde_json::from_slice(&data)
+                .map_err(|_| eprintln!("WARNING: "))
+                .unwrap_or(settings);
+        } else {
+            eprintln!("WARNING: ");
+        }
+    }
+
+    settings
+}
+
+fn write_settings_to_file(settings_filename: &str, settings: [SynthSetting; 8]) {
+    if let Ok(settings_file) = File::create(settings_filename) {
+        if serde_json::to_writer(settings_file, &settings).is_ok() {
+        } else {
+            eprintln!("WARNING: ");
+        }
+    } else {
+        eprintln!("WARNING: ");
+    }
 }
 
 fn parse_tuning_preset_file(tuning_preset_filename: String) -> Option<[[f64; 128]; 8]> {
@@ -119,18 +147,22 @@ pub fn run(options: Options) -> Result<()> {
     let settings_filename = options.settings_filename;
     let tuning_preset_filename = options.tuning_preset_filename;
 
-    let settings = settings_filename.map_or(
-        [
-            SynthSetting::default(),
-            SynthSetting::default(),
-            SynthSetting::default(),
-            SynthSetting::default(),
-            SynthSetting::default(),
-            SynthSetting::default(),
-            SynthSetting::default(),
-            SynthSetting::default(),
-        ],
-        |filename| parse_settings_file(filename),
+    // TODO ugly hacks
+    let (settings, settings_filename) = settings_filename.map_or(
+        (
+            [
+                SynthSetting::default(),
+                SynthSetting::default(),
+                SynthSetting::default(),
+                SynthSetting::default(),
+                SynthSetting::default(),
+                SynthSetting::default(),
+                SynthSetting::default(),
+                SynthSetting::default(),
+            ],
+            "test".to_string(),
+        ),
+        |filename| (parse_settings_file(filename.as_str()), filename.clone()),
     );
     let tuning_preset =
         tuning_preset_filename.map_or(None, |filename| parse_tuning_preset_file(filename));
@@ -141,6 +173,8 @@ pub fn run(options: Options) -> Result<()> {
     let mut synth = Synth::new(settings, tuning_preset);
     // let mut control = Synth::new();
     // let mut pedals = Synth::new();
+
+    synth.change_timbre_bank(0);
 
     loop {
         io.write(&mut synth)?;
@@ -216,6 +250,10 @@ pub fn run(options: Options) -> Result<()> {
                                     TUNING_BANK_6 => synth.change_tuning_bank(5),
                                     TUNING_BANK_7 => synth.change_tuning_bank(6),
                                     TUNING_BANK_8 => synth.change_tuning_bank(7),
+                                    SAVE_TIMBRE_PRESETS => write_settings_to_file(
+                                        settings_filename.as_str(),
+                                        synth.timbre_presets,
+                                    ),
                                     _ => {}
                                 },
                                 // TODO
@@ -277,6 +315,10 @@ pub fn run(options: Options) -> Result<()> {
                                         TUNING_BANK_6 => synth.change_tuning_bank(5),
                                         TUNING_BANK_7 => synth.change_tuning_bank(6),
                                         TUNING_BANK_8 => synth.change_tuning_bank(7),
+                                        SAVE_TIMBRE_PRESETS => write_settings_to_file(
+                                            settings_filename.as_str(),
+                                            synth.timbre_presets,
+                                        ),
                                         _ => {}
                                     },
                                     // _ => unreachable!(),

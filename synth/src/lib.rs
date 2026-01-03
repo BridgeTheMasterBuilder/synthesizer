@@ -4,7 +4,9 @@ use std::collections::BTreeSet;
 use crate::oscillator::Waveform;
 use crate::tables::TABLES;
 use crate::voice::Voice;
+use serde::{Deserialize, Serialize};
 use tables::PYTHAGOREAN;
+
 mod envelope;
 mod modulator;
 pub mod oscillator;
@@ -21,7 +23,7 @@ pub enum Mode {
     Dynamic,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct SynthSetting {
     oscillator_waveform: Waveform,
     oscillator_duty: u8,
@@ -82,7 +84,11 @@ impl Default for SynthSetting {
 
 #[derive(Clone)]
 pub struct Synth {
+    // TODO visibility
     pub mode: Mode,
+    pub timbre_presets: [SynthSetting; 8],
+    pub tuning_presets: Option<[[f64; 128]; 8]>,
+    // TODO allow for manual and pedals
     voices: [Voice; 109],
     active_voices: BTreeSet<u8>,
     table: usize,
@@ -91,9 +97,7 @@ pub struct Synth {
     volume: f64,
     sustain: bool,
     sustained_voices: BTreeSet<u8>,
-    timbre_presets: [SynthSetting; 8],
     timbre_index: usize,
-    tuning_presets: Option<[[f64; 128]; 8]>,
     tuning_index: usize,
 }
 
@@ -103,6 +107,7 @@ impl Synth {
 
     // TODO Magic numbers
     // TODO active_tuning to ignore tuning note offs when fixing
+    // TODO AND ... Send NoteOffs for all active Control notes
     pub fn new(timbre_presets: [SynthSetting; 8], tuning_presets: Option<[[f64; 128]; 8]>) -> Self {
         let mode = if tuning_presets.is_some() {
             Mode::Fixed

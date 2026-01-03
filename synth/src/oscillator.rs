@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
 use std::f64::consts::TAU;
 
 use crate::SAMPLE_RATE;
 
-#[derive(Clone, Debug, Copy, Default)]
+#[derive(Clone, Debug, Copy, Default, Serialize, Deserialize)]
 pub enum Waveform {
     #[default]
     Sine,
