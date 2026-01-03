@@ -119,8 +119,10 @@ impl Synth {
             voices: array::from_fn(|_| Voice::new(0.0, 0)),
             active_voices: BTreeSet::new(),
             table: PYTHAGOREAN as usize,
-            last_note: 60,
-            last_freq: 264.0,
+            // last_note: 60,
+            last_note: 69,
+            // last_freq: 264.0,
+            last_freq: 440.0,
             volume: 1.0,
             sustain: false,
             sustained_voices: BTreeSet::new(),
@@ -156,9 +158,9 @@ impl Synth {
     // TODO Magic numbers
     pub fn change_fundamental(&mut self, note: u8) {
         let normalized_base = (note + 12) as i8;
-        let interval = normalized_base - 60;
+        let interval = normalized_base - 69;
 
-        if let Some(freq) = Self::transform_freq(264.0, interval, &TABLES[self.table]) {
+        if let Some(freq) = Self::transform_freq(440.0, interval, &TABLES[self.table]) {
             self.last_note = normalized_base as u8;
             self.last_freq = freq;
             self.retune();

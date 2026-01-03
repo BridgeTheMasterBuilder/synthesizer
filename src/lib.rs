@@ -5,13 +5,13 @@ use anyhow::Result;
 use bpaf::Bpaf;
 use std::fs::File;
 use std::io::Read;
-use std::str::FromStr;
 use synth::oscillator::Waveform;
 use synth::{Mode, Synth, SynthSetting};
 
 pub mod hw;
 mod midi;
 mod pcm;
+mod scala;
 
 #[derive(Bpaf)]
 #[bpaf(options)]
@@ -96,16 +96,7 @@ const TUNING_BANK_8: u8 = 24;
 const SAVE_TIMBRE_PRESETS: u8 = 27;
 
 fn parse_settings_file(settings_filename: &str) -> [SynthSetting; 8] {
-    let mut settings: [SynthSetting; 8] = [
-        SynthSetting::default(),
-        SynthSetting::default(),
-        SynthSetting::default(),
-        SynthSetting::default(),
-        SynthSetting::default(),
-        SynthSetting::default(),
-        SynthSetting::default(),
-        SynthSetting::default(),
-    ];
+    let mut settings: [SynthSetting; 8] = [SynthSetting::default(); 8];
 
     if let Ok(mut settings_file) = File::open(settings_filename) {
         let mut data = Vec::new();
@@ -133,8 +124,8 @@ fn write_settings_to_file(settings_filename: &str, settings: [SynthSetting; 8]) 
     }
 }
 
-fn parse_tuning_preset_file(tuning_preset_filename: String) -> Option<[[f64; 128]; 8]> {
-    None
+fn parse_tuning_preset_file(tuning_preset_filename: &str) -> [[f64; 128]; 8] {
+    [scala::parse_scala_file(tuning_preset_filename); 8]
 }
 
 pub fn run(options: Options) -> Result<()> {
@@ -149,23 +140,12 @@ pub fn run(options: Options) -> Result<()> {
 
     // TODO ugly hacks
     let (settings, settings_filename) = settings_filename.map_or(
-        (
-            [
-                SynthSetting::default(),
-                SynthSetting::default(),
-                SynthSetting::default(),
-                SynthSetting::default(),
-                SynthSetting::default(),
-                SynthSetting::default(),
-                SynthSetting::default(),
-                SynthSetting::default(),
-            ],
-            "test".to_string(),
-        ),
+        ([SynthSetting::default(); 8], "test".to_string()),
         |filename| (parse_settings_file(filename.as_str()), filename.clone()),
     );
-    let tuning_preset =
-        tuning_preset_filename.map_or(None, |filename| parse_tuning_preset_file(filename));
+    let tuning_preset = tuning_preset_filename.map_or(None, |filename| {
+        Some(parse_tuning_preset_file(filename.as_str()))
+    });
 
     let mut io = IO::new(
         main_port, aux_port, expr_port, mixer_port, pedal_port, &card,
