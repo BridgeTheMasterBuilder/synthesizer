@@ -1,45 +1,59 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
+// TODO ability to specify base frequency/note for cyclical scales
 pub fn parse_scala_file(filename: &str) -> [f64; 128] {
     if let Ok(file) = File::open(filename) {
         let reader = BufReader::new(file);
 
-        let base_freq = 13.75;
+        // TODO
+        let lines: Vec<String> = reader
+            .lines()
+            .map(|x| x.map(|x| x.trim().to_string()))
+            .collect::<Result<_, _>>()
+            .unwrap();
+
+        let mut idx = 0;
+
+        while lines[idx].starts_with('!') {
+            idx += 1;
+        }
+
+        idx += 1;
+
+        while lines[idx].starts_with('!') {
+            idx += 1;
+        }
+
+        let count = lines[idx].parse::<usize>().unwrap();
+        // if count != 127 {
+        //     panic!("Not implemented");
+        // }
+
+        idx += 1;
+
+        while lines[idx].starts_with('!') {
+            idx += 1;
+        }
+
+        let base_freq = 8.25;
 
         let mut frequencies = [base_freq; 128];
 
-        let mut read_desc = false;
-        let mut read_count = false;
+        let start = idx;
 
-        let mut count;
-        let mut idx = 10;
-
-        for line in reader.lines() {
-            let line = line.unwrap();
-            let data = line.trim();
+        for i in 1..128 {
+            let data = &lines[idx];
 
             if data.starts_with('!') {
-                continue;
-            } else if !read_desc {
-                read_desc = true;
-                continue;
-            } else if !read_count {
-                read_count = true;
-                count = data.parse::<usize>().unwrap();
-                if count != 128 {
-                    panic!("Not implemented");
-                }
                 continue;
             } else if data.contains('.') {
                 let cents = data.parse::<f64>().unwrap();
 
-                // let octave = idx as f64 / count as f64;
+                let octave = ((i - 1) / count) as f64;
 
-                // frequencies[idx] = base_freq * 2.0_f64.powf((cents + octave * 1200.0) / 1200.0);
-                frequencies[idx] = base_freq * 2.0_f64.powf(cents / 1200.0);
-
-                idx += 1;
+                frequencies[i] = base_freq * 2.0_f64.powf((cents + octave * 1200.0) / 1200.0);
+                // frequencies[idx] = base_freq * 2.0_f64.powf(cents / 1200.0);
             } else {
                 let interval = if data.contains('/') {
                     let ratio = data.split('/').collect::<Vec<&str>>();
@@ -51,14 +65,20 @@ pub fn parse_scala_file(filename: &str) -> [f64; 128] {
                     data.parse::<f64>().unwrap()
                 };
 
-                // let octave = (idx / count) as f64;
+                let octave = ((i - 1) / count) as f64;
 
-                // frequencies[idx] = base_freq * 2.0_f64.powf(octave) * interval;
-                frequencies[idx] = base_freq * interval;
-                idx += 1;
+                frequencies[i] = base_freq * 2.0_f64.powf(octave) * interval;
+                // frequencies[idx] = base_freq * interval;
             }
-        }
 
+            idx = if idx - start + 1 == count {
+                start
+            } else {
+                idx + 1
+            };
+
+            dbg!(idx);
+        }
         dbg!(&frequencies);
 
         frequencies
