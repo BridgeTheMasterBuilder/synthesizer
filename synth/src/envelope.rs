@@ -22,13 +22,14 @@ pub struct Envelope {
     release_reload: u32,
     state: State,
     repeat: bool,
+    length: u32,
 }
 
+// TODO increase envelope length
 impl Envelope {
     const MAX_POLYPHONY: u16 = 88;
     pub const PEAK: u16 = u16::MAX / Self::MAX_POLYPHONY;
     pub const INCR: u16 = 1;
-    pub const FACTOR: u32 = 1;
 
     pub fn new(
         gain: f64,
@@ -36,6 +37,7 @@ impl Envelope {
         decay: u32,
         sustain: u16,
         release: u32,
+        length: u32,
         automatic: bool,
     ) -> Self {
         Self {
@@ -44,14 +46,15 @@ impl Envelope {
             vol: 0,
             incr: Self::INCR,
             target: 0,
-            attack: attack * Self::FACTOR,
-            attack_reload: attack * Self::FACTOR,
-            decay: decay * Self::FACTOR,
-            decay_reload: decay * Self::FACTOR,
+            attack,
+            attack_reload: attack,
+            decay,
+            decay_reload: decay,
             sustain: sustain * 512 / Self::MAX_POLYPHONY,
-            release: release * Self::FACTOR,
-            release_reload: release * Self::FACTOR,
+            release,
+            release_reload: release,
             state: State::Waiting,
+            length,
             repeat: automatic,
         }
     }
@@ -183,5 +186,9 @@ impl Envelope {
 
     pub fn toggle_repeat(&mut self) {
         self.repeat = !self.repeat;
+    }
+
+    pub fn set_length(&mut self, length: u8) {
+        self.length = length as u32 + 1;
     }
 }

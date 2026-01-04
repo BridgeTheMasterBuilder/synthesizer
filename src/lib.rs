@@ -94,6 +94,14 @@ const TUNING_BANK_6: u8 = 18;
 const TUNING_BANK_7: u8 = 21;
 const TUNING_BANK_8: u8 = 24;
 const SAVE_TIMBRE_PRESETS: u8 = 27;
+const ENV_LENGTH: u32 = 19;
+const MOD1_ENV_LENGTH: u32 = 23;
+const MOD2_ENV_LENGTH: u32 = 27;
+const MOD1_RATIO_SPECTRUM: u32 = 31;
+const MOD1_AMOUNT_SPECTRUM: u32 = 49;
+const MOD2_RATIO_SPECTRUM: u32 = 53;
+const MOD2_AMOUNT_SPECTRUM: u32 = 57;
+const VIBRATO_DEPTH: u32 = 61;
 
 fn parse_settings_file(settings_filename: &str) -> [SynthSetting; 8] {
     let mut settings: [SynthSetting; 8] = [SynthSetting::default(); 8];
@@ -203,6 +211,7 @@ pub fn run(options: Options) -> Result<()> {
                         }
                     }
                 }
+                // TODO ugly repetition
                 EventType::Noteon => {
                     if let Some(EvNote { channel, note, .. }) = event.get_data() {
                         match synth.mode {
@@ -380,6 +389,18 @@ pub fn run(options: Options) -> Result<()> {
                             DECAY => synth.set_decay(value as u8),
                             SUSTAIN => synth.set_sustain(value as u8),
                             RELEASE => synth.set_release(value as u8),
+                            ENV_LENGTH => synth.set_envelope_length(value as u8),
+                            MOD1_ENV_LENGTH => synth.set_modulator1_envelope_length(value as u8),
+                            MOD2_ENV_LENGTH => synth.set_modulator2_envelope_length(value as u8),
+                            MOD1_RATIO_SPECTRUM => synth.set_modulator1_ratio_spectrum(value as u8),
+                            MOD1_AMOUNT_SPECTRUM => {
+                                synth.set_modulator1_amount_spectrum(value as u8)
+                            }
+                            MOD2_RATIO_SPECTRUM => synth.set_modulator2_ratio_spectrum(value as u8),
+                            MOD2_AMOUNT_SPECTRUM => {
+                                synth.set_modulator2_amount_spectrum(value as u8)
+                            }
+                            VIBRATO_DEPTH => synth.set_vibrato_depth(value as u8),
                             _ => {}
                         },
                         _ => {}

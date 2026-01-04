@@ -14,6 +14,7 @@ pub struct Voice {
     pub oscillator: Oscillator,
     pub lfo: Oscillator,
     buffer: Option<i16>,
+    vibrato_depth: u8,
 }
 
 impl Voice {
@@ -24,12 +25,13 @@ impl Voice {
             enabled: true,
             oscillator: Oscillator::new(freq),
             buffer: None,
-            env: Envelope::new(0.5, 1, 1, 127, 1, false),
-            modulator1_env: Envelope::new(1.0, 1, 1, 127, 1, false),
+            env: Envelope::new(0.5, 1, 1, 127, 1, 1, false),
+            modulator1_env: Envelope::new(1.0, 1, 1, 127, 1, 1, false),
             lfo: Oscillator::new(0.0),
             modulator1: Modulator::new(),
             modulator2: Modulator::new(),
-            modulator2_env: Envelope::new(1.0, 1, 1, 127, 1, false),
+            modulator2_env: Envelope::new(1.0, 1, 1, 127, 1, 1, false),
+            vibrato_depth: 5,
         }
     }
 
@@ -53,7 +55,8 @@ impl Voice {
         let sample = sample * self.env.volume() as f64;
 
         let vibrato = self.lfo.output();
-        let delta = (self.oscillator.freq() * 2.0_f64.powf((5.0 * self.lfo.freq()) / 1200.0))
+        let delta = (self.oscillator.freq()
+            * 2.0_f64.powf((self.vibrato_depth as f64 * self.lfo.freq()) / 1200.0))
             - self.oscillator.freq();
         let new_freq = self.oscillator.freq() + delta * vibrato;
 
@@ -97,5 +100,9 @@ impl Voice {
 
     pub fn set_gain(&mut self, value: u16) {
         self.env.set_gain(value as f64 / u16::MAX as f64);
+    }
+
+    pub fn set_vibrato_depth(&mut self, depth: u8) {
+        self.vibrato_depth = depth;
     }
 }

@@ -7,6 +7,7 @@ use crate::voice::Voice;
 use serde::{Deserialize, Serialize};
 use tables::PYTHAGOREAN;
 
+mod build;
 mod envelope;
 mod modulator;
 pub mod oscillator;
@@ -49,6 +50,14 @@ pub struct SynthSetting {
     modulator2_sustain: u8,
     modulator2_release: u8,
     modulator2_env_repeat: bool,
+    env_length: u8,
+    modulator1_env_length: u8,
+    modulator2_env_length: u8,
+    modulator1_ratio_spectrum: u8,
+    modulator1_amount_spectrum: u8,
+    modulator2_ratio_spectrum: u8,
+    modulator2_amount_spectrum: u8,
+    vibrato_depth: u8,
 }
 
 impl Default for SynthSetting {
@@ -78,6 +87,14 @@ impl Default for SynthSetting {
             modulator2_sustain: 127,
             modulator2_release: 0,
             modulator2_env_repeat: false,
+            env_length: 1,
+            modulator1_env_length: 1,
+            modulator2_env_length: 1,
+            modulator1_ratio_spectrum: 16,
+            modulator1_amount_spectrum: 1,
+            modulator2_ratio_spectrum: 16,
+            modulator2_amount_spectrum: 1,
+            vibrato_depth: 5,
         }
     }
 }
@@ -520,6 +537,64 @@ impl Synth {
         self.tuning_index = index;
 
         self.retune_fixed();
+    }
+
+    pub fn set_envelope_length(&mut self, value: u8) {
+        self.timbre_presets[self.timbre_index].env_length = value;
+
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.env.set_length(value));
+    }
+    pub fn set_modulator1_envelope_length(&mut self, value: u8) {
+        self.timbre_presets[self.timbre_index].modulator1_env_length = value;
+
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator1_env.set_length(value));
+    }
+    pub fn set_modulator2_envelope_length(&mut self, value: u8) {
+        self.timbre_presets[self.timbre_index].modulator2_env_length = value;
+
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator2_env.set_length(value));
+    }
+    pub fn set_modulator1_ratio_spectrum(&mut self, value: u8) {
+        self.timbre_presets[self.timbre_index].modulator1_ratio_spectrum = value;
+
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator1.set_ratio_spectrum(value));
+    }
+    pub fn set_modulator1_amount_spectrum(&mut self, value: u8) {
+        self.timbre_presets[self.timbre_index].modulator1_amount_spectrum = value;
+
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator1.set_amount_spectrum(value));
+    }
+    pub fn set_modulator2_ratio_spectrum(&mut self, value: u8) {
+        self.timbre_presets[self.timbre_index].modulator2_ratio_spectrum = value;
+
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator2.set_ratio_spectrum(value));
+    }
+    pub fn set_modulator2_amount_spectrum(&mut self, value: u8) {
+        self.timbre_presets[self.timbre_index].modulator2_amount_spectrum = value;
+
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator2.set_amount_spectrum(value));
+    }
+
+    pub fn set_vibrato_depth(&mut self, value: u8) {
+        self.timbre_presets[self.timbre_index].vibrato_depth = value;
+
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.set_vibrato_depth(value));
     }
 }
 

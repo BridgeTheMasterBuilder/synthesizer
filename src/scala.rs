@@ -77,9 +77,9 @@ pub fn parse_scala_file(filename: &str) -> [f64; 128] {
                 idx + 1
             };
 
-            dbg!(idx);
+            // dbg!(idx);
         }
-        dbg!(&frequencies);
+        // dbg!(&frequencies);
 
         frequencies
     } else {

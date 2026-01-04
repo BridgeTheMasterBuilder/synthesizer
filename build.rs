@@ -1,9 +1,10 @@
 #![allow(clippy::eq_op)]
 
+use anyhow::Result;
+use std::env;
 use std::fs::File;
 use std::io::Write;
-
-use anyhow::Result;
+use std::path::Path;
 
 use crate::tables::TABLES;
 
@@ -24,7 +25,9 @@ fn emit_tables() -> Result<()> {
         Ok(())
     }
 
-    let mut file = File::create("synth/src/tables.rs")?;
+    let out_dir = env::var("OUT_DIR")?;
+    let final_path = Path::new(&out_dir).join("tables.rs");
+    let mut file = File::create(final_path)?;
 
     writeln!(
         file,
