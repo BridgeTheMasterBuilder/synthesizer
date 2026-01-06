@@ -25,12 +25,12 @@ impl Voice {
             enabled: true,
             oscillator: Oscillator::new(freq),
             buffer: None,
-            env: Envelope::new(0.5, 1, 1, 127, 1, 1, false),
-            modulator1_env: Envelope::new(1.0, 1, 1, 127, 1, 1, false),
+            env: Envelope::new(0.5, 1, 1, 127, 1, false),
+            modulator1_env: Envelope::new(1.0, 1, 1, 127, 1, false),
             lfo: Oscillator::new(0.0),
             modulator1: Modulator::new(),
             modulator2: Modulator::new(),
-            modulator2_env: Envelope::new(1.0, 1, 1, 127, 1, 1, false),
+            modulator2_env: Envelope::new(1.0, 1, 1, 127, 1, false),
             vibrato_depth: 5,
         }
     }

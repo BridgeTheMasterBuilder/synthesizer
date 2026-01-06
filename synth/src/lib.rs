@@ -238,7 +238,8 @@ impl Synth {
         let voice = &mut self.voices[note as usize];
         voice.enabled = true;
         voice.set_freq(freq);
-        voice.env.set_volume(vol);
+        // voice.env.set_volume(vol);
+        voice.env.set_volume(255);
         voice.modulator1_env.set_volume(255);
         voice.modulator2_env.set_volume(255);
 
@@ -503,6 +504,16 @@ impl Synth {
             .iter_mut()
             .for_each(|voice| voice.modulator2_env.toggle_repeat());
     }
+    pub fn set_modulator1_env_repeat(&mut self, value: bool) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator1_env.set_repeat(value));
+    }
+    pub fn set_modulator2_env_repeat(&mut self, value: bool) {
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.modulator2_env.set_repeat(value));
+    }
 
     // TODO reset envelopes?
     pub fn change_timbre_bank(&mut self, index: usize) {
@@ -524,8 +535,7 @@ impl Synth {
         self.set_modulator1_decay(settings.modulator1_decay);
         self.set_modulator1_sustain(settings.modulator1_sustain);
         self.set_modulator1_release(settings.modulator1_release);
-        // TODO set repeat
-        self.toggle_modulator1_env_repeat();
+        self.set_modulator1_env_repeat(settings.modulator1_env_repeat);
         self.set_modulator2_waveform(settings.modulator2_waveform);
         self.set_modulator2_duty(settings.modulator2_duty);
         self.set_modulator2_ratio(settings.modulator2_ratio);
@@ -534,8 +544,7 @@ impl Synth {
         self.set_modulator2_decay(settings.modulator2_decay);
         self.set_modulator2_sustain(settings.modulator2_sustain);
         self.set_modulator2_release(settings.modulator2_release);
-        // TODO set repeat
-        self.toggle_modulator2_env_repeat();
+        self.set_modulator2_env_repeat(settings.modulator1_env_repeat);
     }
 
     pub fn change_tuning_bank(&mut self, index: usize) {

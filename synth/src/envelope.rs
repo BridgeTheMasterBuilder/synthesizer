@@ -22,7 +22,9 @@ pub struct Envelope {
     release_reload: u32,
     state: State,
     repeat: bool,
-    length: u32,
+    // length: u32,
+    delay: u8,
+    delay_reload: u8,
 }
 
 // TODO increase envelope length
@@ -37,7 +39,7 @@ impl Envelope {
         decay: u32,
         sustain: u16,
         release: u32,
-        length: u32,
+        // length: u32,
         automatic: bool,
     ) -> Self {
         Self {
@@ -54,8 +56,10 @@ impl Envelope {
             release,
             release_reload: release,
             state: State::Waiting,
-            length,
+            // length,
             repeat: automatic,
+            delay: 0,
+            delay_reload: 0,
         }
     }
 
@@ -65,7 +69,17 @@ impl Envelope {
             State::Waiting => false,
             State::Attack => {
                 if self.attack > 0 {
-                    self.attack -= 1;
+                    if self.delay > 0 {
+                        self.delay -= 1;
+                    } else {
+                        self.attack -= 1;
+
+                        if self.decay > 1 {
+                            self.delay = self.delay_reload;
+                        }
+
+                        self.delay = self.delay_reload;
+                    }
                 } else {
                     self.vol = if self.vol + self.incr < self.target {
                         self.vol + self.incr
@@ -87,7 +101,17 @@ impl Envelope {
             }
             State::Decay => {
                 if self.decay > 0 {
-                    self.decay -= 1;
+                    if self.delay > 0 {
+                        self.delay -= 1;
+                    } else {
+                        self.decay -= 1;
+
+                        if self.release > 1 {
+                            self.delay = self.delay_reload;
+                        }
+
+                        self.delay = self.delay_reload;
+                    }
                 } else {
                     self.vol = if self.vol > self.target {
                         self.vol.saturating_sub(self.incr)
@@ -115,7 +139,13 @@ impl Envelope {
             }
             State::Release => {
                 if self.release > 0 {
-                    self.release -= 1;
+                    if self.delay > 0 {
+                        self.delay -= 1;
+                    } else {
+                        self.release -= 1;
+
+                        self.delay = self.delay_reload;
+                    }
 
                     false
                 } else {
@@ -147,12 +177,17 @@ impl Envelope {
         if vol == 0 {
             self.enabled = false;
         } else {
+            dbg!(self.attack);
             self.enabled = true;
             self.target = Self::PEAK;
             self.attack = self.attack_reload;
             self.decay = self.decay_reload;
             self.release = self.release_reload;
             self.state = State::Attack;
+
+            if self.attack > 1 {
+                self.delay = self.delay_reload;
+            }
         }
     }
 
@@ -188,7 +223,11 @@ impl Envelope {
         self.repeat = !self.repeat;
     }
 
+    pub fn set_repeat(&mut self, value: bool) {
+        self.repeat = value;
+    }
     pub fn set_length(&mut self, length: u8) {
-        self.length = length as u32 + 1;
+        // self.length = length as u32 + 1;
+        self.delay_reload = length;
     }
 }
