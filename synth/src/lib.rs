@@ -125,7 +125,12 @@ impl Synth {
     // TODO Magic numbers
     // TODO active_tuning to ignore tuning note offs when fixing
     // TODO AND ... Send NoteOffs for all active Control notes
-    pub fn new(timbre_presets: [SynthSetting; 8], tuning_presets: Option<[[f64; 128]; 8]>) -> Self {
+    pub fn new(
+        timbre_presets: [SynthSetting; 8],
+        tuning_presets: Option<[[f64; 128]; 8]>,
+        base_freq: f64,
+        base_note: u8,
+    ) -> Self {
         let mode = if tuning_presets.is_some() {
             Mode::Fixed
         } else {
@@ -136,9 +141,9 @@ impl Synth {
             voices: array::from_fn(|_| Voice::new(0.0, 0)),
             active_voices: BTreeSet::new(),
             table: PYTHAGOREAN as usize,
-            last_note: 60,
+            last_note: base_note,
             // last_note: 69,
-            last_freq: 264.0,
+            last_freq: base_freq,
             // last_freq: 440.0,
             volume: 1.0,
             sustain: false,

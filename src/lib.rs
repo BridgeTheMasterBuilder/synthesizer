@@ -32,6 +32,10 @@ pub struct Options {
     pub settings_filename: Option<String>,
     #[bpaf(short('t'), long, argument)]
     pub tuning_preset_filename: Option<String>,
+    #[bpaf(short('b'), long, argument)]
+    pub base_frequency: Option<f64>,
+    #[bpaf(short('n'), long, argument)]
+    pub base_note: Option<u8>,
 }
 
 const C0: u8 = 12;
@@ -132,8 +136,23 @@ fn write_settings_to_file(settings_filename: &str, settings: [SynthSetting; 8]) 
     }
 }
 
-fn parse_tuning_preset_file(tuning_preset_filename: &str) -> [[f64; 128]; 8] {
-    [scala::parse_scala_file(tuning_preset_filename); 8]
+fn parse_tuning_preset_file(
+    tuning_preset_filename: &str,
+    base_freq: f64,
+    base_note: usize,
+) -> [[f64; 128]; 8] {
+    let scale = scala::parse_scala_file(tuning_preset_filename);
+
+    dbg!(&scale);
+
+    // let normalized_base_note = base_note % scale.size();
+
+    // let frequencies = scale.frequencies(base_freq, normalized_base_note);
+    let frequencies = scala::scale_to_tuning(scale, base_freq, base_note as u8);
+
+    dbg!(frequencies);
+
+    [frequencies; 8]
 }
 
 pub fn run(options: Options) -> Result<()> {
@@ -146,19 +165,26 @@ pub fn run(options: Options) -> Result<()> {
     let settings_filename = options.settings_filename;
     let tuning_preset_filename = options.tuning_preset_filename;
 
+    let base_freq = options.base_frequency.unwrap_or(440.0);
+    let base_note = options.base_note.unwrap_or(69);
+
     // TODO ugly hacks
     let (settings, settings_filename) = settings_filename.map_or(
         ([SynthSetting::default(); 8], "test".to_string()),
         |filename| (parse_settings_file(filename.as_str()), filename.clone()),
     );
     let tuning_preset = tuning_preset_filename.map_or(None, |filename| {
-        Some(parse_tuning_preset_file(filename.as_str()))
+        Some(parse_tuning_preset_file(
+            filename.as_str(),
+            base_freq,
+            base_note as usize,
+        ))
     });
 
     let mut io = IO::new(
         main_port, aux_port, expr_port, mixer_port, pedal_port, &card,
     )?;
-    let mut synth = Synth::new(settings, tuning_preset);
+    let mut synth = Synth::new(settings, tuning_preset, base_freq, base_note);
     // let mut control = Synth::new();
     // let mut pedals = Synth::new();
 
