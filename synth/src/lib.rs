@@ -26,8 +26,10 @@ pub enum Mode {
 
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct SynthSetting {
-    oscillator_waveform: Waveform,
-    oscillator_duty: u8,
+    oscillator1_waveform: Waveform,
+    oscillator1_duty: u8,
+    oscillator2_waveform: Waveform,
+    oscillator2_duty: u8,
     oscillator_attack: u8,
     oscillator_decay: u8,
     oscillator_sustain: u8,
@@ -58,13 +60,16 @@ pub struct SynthSetting {
     modulator2_ratio_spectrum: u8,
     modulator2_amount_spectrum: u8,
     vibrato_depth: u8,
+    oscillator_balance: u8,
 }
 
 impl Default for SynthSetting {
     fn default() -> Self {
         Self {
-            oscillator_waveform: Waveform::Sine,
-            oscillator_duty: 0,
+            oscillator1_waveform: Waveform::Sine,
+            oscillator1_duty: 0,
+            oscillator2_waveform: Waveform::Sine,
+            oscillator2_duty: 0,
             oscillator_attack: 0,
             oscillator_decay: 0,
             oscillator_sustain: 127,
@@ -95,6 +100,7 @@ impl Default for SynthSetting {
             modulator2_ratio_spectrum: 16,
             modulator2_amount_spectrum: 1,
             vibrato_depth: 5,
+            oscillator_balance: 127,
         }
     }
 }
@@ -302,7 +308,7 @@ impl Synth {
 
         self.voices
             .iter_mut()
-            .for_each(|voice| voice.modulator1.set_ratio(value, voice.oscillator.freq()));
+            .for_each(|voice| voice.modulator1.set_ratio(value, voice.oscillator1.freq()));
     }
     pub fn set_modulator1_amount(&mut self, value: u8) {
         self.timbre_presets[self.timbre_index].modulator1_amount = value;
@@ -328,12 +334,20 @@ impl Synth {
             .iter_mut()
             .for_each(|voice| voice.modulator2.set_amount(value));
     }
-    pub fn set_waveform(&mut self, waveform: Waveform) {
-        self.timbre_presets[self.timbre_index].oscillator_waveform = waveform;
+    pub fn set_oscillator1_waveform(&mut self, waveform: Waveform) {
+        self.timbre_presets[self.timbre_index].oscillator1_waveform = waveform;
 
         self.voices
             .iter_mut()
-            .for_each(|voice| voice.oscillator.set_waveform(waveform));
+            .for_each(|voice| voice.oscillator1.set_waveform(waveform));
+    }
+
+    pub fn set_oscillator2_waveform(&mut self, waveform: Waveform) {
+        self.timbre_presets[self.timbre_index].oscillator2_waveform = waveform;
+
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.oscillator2.set_waveform(waveform));
     }
 
     pub fn set_modulator1_waveform(&mut self, waveform: Waveform) {
@@ -351,12 +365,19 @@ impl Synth {
             .iter_mut()
             .for_each(|voice| voice.modulator2.oscillator.set_waveform(waveform));
     }
-    pub fn set_duty(&mut self, value: u8) {
-        self.timbre_presets[self.timbre_index].oscillator_duty = value;
+    pub fn set_oscillator1_duty(&mut self, value: u8) {
+        self.timbre_presets[self.timbre_index].oscillator1_duty = value;
 
         self.voices
             .iter_mut()
-            .for_each(|voice| voice.oscillator.set_duty(value));
+            .for_each(|voice| voice.oscillator1.set_duty(value));
+    }
+    pub fn set_oscillator2_duty(&mut self, value: u8) {
+        self.timbre_presets[self.timbre_index].oscillator2_duty = value;
+
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.oscillator2.set_duty(value));
     }
 
     pub fn set_modulator1_duty(&mut self, value: u8) {
@@ -521,8 +542,10 @@ impl Synth {
 
         let settings = self.timbre_presets[self.timbre_index];
 
-        self.set_waveform(settings.oscillator_waveform);
-        self.set_duty(settings.oscillator_duty);
+        self.set_oscillator1_waveform(settings.oscillator1_waveform);
+        self.set_oscillator1_duty(settings.oscillator1_duty);
+        self.set_oscillator2_waveform(settings.oscillator2_waveform);
+        self.set_oscillator2_duty(settings.oscillator2_duty);
         self.set_attack(settings.oscillator_attack);
         self.set_decay(settings.oscillator_decay);
         self.set_sustain(settings.oscillator_sustain);
@@ -545,6 +568,7 @@ impl Synth {
         self.set_modulator2_sustain(settings.modulator2_sustain);
         self.set_modulator2_release(settings.modulator2_release);
         self.set_modulator2_env_repeat(settings.modulator1_env_repeat);
+        self.set_oscillator_balance(settings.oscillator_balance);
     }
 
     pub fn change_tuning_bank(&mut self, index: usize) {
@@ -609,6 +633,14 @@ impl Synth {
         self.voices
             .iter_mut()
             .for_each(|voice| voice.set_vibrato_depth(value));
+    }
+
+    pub fn set_oscillator_balance(&mut self, value: u8) {
+        self.timbre_presets[self.timbre_index].oscillator_balance = value;
+
+        self.voices
+            .iter_mut()
+            .for_each(|voice| voice.set_oscillator_balance(value));
     }
 }
 

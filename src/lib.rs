@@ -59,8 +59,10 @@ const PEDALS: u8 = 4;
 const VOLUME: u32 = 21;
 const VIBRATO: u32 = 22;
 const DAMPER: u32 = 64;
-const WAVEFORM: u32 = 16;
-const DUTY: u32 = 20;
+const OSCILLATOR1_WAVEFORM: u32 = 16;
+const OSCILLATOR2_WAVEFORM: u32 = 24;
+const OSCILLATOR1_DUTY: u32 = 20;
+const OSCILLATOR2_DUTY: u32 = 28;
 const ATTACK: u32 = 46;
 const DECAY: u32 = 50;
 const SUSTAIN: u32 = 54;
@@ -106,6 +108,7 @@ const MOD1_AMOUNT_SPECTRUM: u32 = 49;
 const MOD2_RATIO_SPECTRUM: u32 = 53;
 const MOD2_AMOUNT_SPECTRUM: u32 = 57;
 const VIBRATO_DEPTH: u32 = 61;
+const OSCILLATOR_BALANCE: u32 = 62;
 
 fn parse_settings_file(settings_filename: &str) -> [SynthSetting; 8] {
     let mut settings: [SynthSetting; 8] = [SynthSetting::default(); 8];
@@ -366,7 +369,7 @@ pub fn run(options: Options) -> Result<()> {
                             _ => {}
                         },
                         MIXER => match param {
-                            WAVEFORM => {
+                            OSCILLATOR1_WAVEFORM => {
                                 let waveform = match value / (128 / 4) {
                                     0 => Waveform::Sine,
                                     1 => Waveform::Pulse,
@@ -374,7 +377,17 @@ pub fn run(options: Options) -> Result<()> {
                                     3 => Waveform::Sawtooth,
                                     _ => unreachable!(),
                                 };
-                                synth.set_waveform(waveform);
+                                synth.set_oscillator1_waveform(waveform);
+                            }
+                            OSCILLATOR2_WAVEFORM => {
+                                let waveform = match value / (128 / 4) {
+                                    0 => Waveform::Sine,
+                                    1 => Waveform::Pulse,
+                                    2 => Waveform::Triangle,
+                                    3 => Waveform::Sawtooth,
+                                    _ => unreachable!(),
+                                };
+                                synth.set_oscillator2_waveform(waveform);
                             }
                             MODULATOR1_WAVEFORM => {
                                 let waveform = match value / (128 / 4) {
@@ -396,7 +409,8 @@ pub fn run(options: Options) -> Result<()> {
                                 };
                                 synth.set_modulator2_waveform(waveform);
                             }
-                            DUTY => synth.set_duty(value as u8),
+                            OSCILLATOR1_DUTY => synth.set_oscillator1_duty(value as u8),
+                            OSCILLATOR2_DUTY => synth.set_oscillator2_duty(value as u8),
                             MODULATOR1_RATIO => synth.set_modulator1_ratio(value as u8),
                             MODULATOR1_AMOUNT => synth.set_modulator1_amount(value as u8),
                             MODULATOR1_DUTY => synth.set_modulator1_duty(value as u8),
@@ -427,6 +441,7 @@ pub fn run(options: Options) -> Result<()> {
                                 synth.set_modulator2_amount_spectrum(value as u8)
                             }
                             VIBRATO_DEPTH => synth.set_vibrato_depth(value as u8),
+                            OSCILLATOR_BALANCE => synth.set_oscillator_balance(value as u8),
                             _ => {}
                         },
                         _ => {}
