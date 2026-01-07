@@ -1,0 +1,27 @@
+[
+    {
+        "base_freq": 440.0,
+        "base_note": 69,
+        "tuning_preset_filename": "ace2.scl"
+    },
+    {
+        "base_freq": 264.0,
+        "base_note": 60,
+        "tuning_preset_filename": "b13.scl"
+    },
+    {
+        "base_freq": 264.0,
+        "base_note": 60,
+        "tuning_preset_filename": "b2.scl"
+    },
+    {
+        "base_freq": 453.75,
+        "base_note": 69,
+        "tuning_preset_filename": "d.scl"
+    },
+    {
+        "base_freq": 440.0,
+        "base_note": 69,
+        "tuning_preset_filename": "e1.scl"
+    }
+]
