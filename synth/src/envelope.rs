@@ -74,10 +74,6 @@ impl Envelope {
                     } else {
                         self.attack -= 1;
 
-                        if self.decay > 1 {
-                            self.delay = self.delay_reload;
-                        }
-
                         self.delay = self.delay_reload;
                     }
                 } else {
@@ -95,6 +91,8 @@ impl Envelope {
 
                     self.target = self.sustain;
 
+                    self.delay = self.delay_reload;
+
                     self.state = State::Decay;
                 }
                 false
@@ -105,10 +103,6 @@ impl Envelope {
                         self.delay -= 1;
                     } else {
                         self.decay -= 1;
-
-                        if self.release > 1 {
-                            self.delay = self.delay_reload;
-                        }
 
                         self.delay = self.delay_reload;
                     }
@@ -125,10 +119,13 @@ impl Envelope {
                         return false;
                     }
 
+                    self.delay = self.delay_reload;
+
                     self.state = State::Sustain;
                 }
                 false
             }
+            // TODO sustain length
             State::Sustain => {
                 if !self.enabled || self.repeat {
                     self.target = 0;
@@ -149,6 +146,8 @@ impl Envelope {
 
                     false
                 } else {
+                    self.delay = 0;
+
                     self.vol = if self.vol > self.target {
                         self.vol.saturating_sub(self.incr)
                     } else {
@@ -177,7 +176,7 @@ impl Envelope {
         if vol == 0 {
             self.enabled = false;
         } else {
-            dbg!(self.attack);
+            // dbg!(self.attack);
             self.enabled = true;
             self.target = Self::PEAK;
             self.attack = self.attack_reload;
@@ -185,7 +184,7 @@ impl Envelope {
             self.release = self.release_reload;
             self.state = State::Attack;
 
-            if self.attack > 1 {
+            if self.attack_reload > 1 {
                 self.delay = self.delay_reload;
             }
         }
