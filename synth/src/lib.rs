@@ -238,8 +238,8 @@ impl Synth {
         }
     }
 
-    fn play_note_with_freq_and_vol(&mut self, note: u8, freq: f64, vol: u8) {
-        let vol = vol as u16;
+    fn play_note_with_freq_and_vol(&mut self, note: u8, freq: f64, _vol: u8) {
+        // let vol = vol as u16;
 
         let voice = &mut self.voices[note as usize];
         voice.enabled = true;

@@ -3,8 +3,9 @@ use ::alsa::seq::EventType;
 use alsa::seq::{EvCtrl, EvNote};
 use anyhow::Result;
 use bpaf::Bpaf;
-use std::fs::File;
+use std::fs::{DirEntry, File, read_dir};
 use std::io::Read;
+use std::path::Path;
 use synth::oscillator::Waveform;
 use synth::{Mode, Synth, SynthSetting};
 
@@ -143,7 +144,7 @@ fn parse_tuning_preset_file(
     tuning_preset_filename: &str,
     base_freq: f64,
     base_note: usize,
-) -> [[f64; 128]; 8] {
+) -> [f64; 128] {
     let scale = scala::parse_scala_file(tuning_preset_filename);
 
     dbg!(&scale);
@@ -155,7 +156,35 @@ fn parse_tuning_preset_file(
 
     dbg!(frequencies);
 
-    [frequencies; 8]
+    frequencies
+}
+
+fn parse_tuning_directory(
+    tuning_preset_directory: &str,
+    base_freq: f64,
+    base_note: usize,
+) -> [[f64; 128]; 8] {
+    if let Ok(dir) = read_dir(tuning_preset_directory) {
+        let mut tunings = [[0.0; 128]; 8];
+
+        let mut files: Vec<DirEntry> = dir.map(|r| r.unwrap()).collect();
+        files.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+
+        // TODO
+        for (i, file) in files.iter().enumerate() {
+            dbg!(&file);
+            let path = Path::new(tuning_preset_directory);
+            let path = path.join(file.file_name());
+            let frequencies =
+                parse_tuning_preset_file(path.to_str().unwrap(), base_freq, base_note);
+
+            tunings[i] = frequencies;
+        }
+
+        tunings
+    } else {
+        panic!("WARNING: ");
+    }
 }
 
 pub fn run(options: Options) -> Result<()> {
@@ -177,11 +206,18 @@ pub fn run(options: Options) -> Result<()> {
         |filename| (parse_settings_file(filename.as_str()), filename.clone()),
     );
     let tuning_preset = tuning_preset_filename.map_or(None, |filename| {
-        Some(parse_tuning_preset_file(
-            filename.as_str(),
-            base_freq,
-            base_note as usize,
-        ))
+        let path = Path::new(&filename);
+        if path.is_dir() {
+            Some(parse_tuning_directory(
+                &filename,
+                base_freq,
+                base_note as usize,
+            ))
+        } else if path.is_file() {
+            Some([parse_tuning_preset_file(filename.as_str(), base_freq, base_note as usize); 8])
+        } else {
+            panic!("WARNING: ");
+        }
     });
 
     let mut io = IO::new(
@@ -277,7 +313,9 @@ pub fn run(options: Options) -> Result<()> {
                                 // TODO
                                 // CONTROL => control.play(note),
                                 // MANUAL => synth.play(note),
-                                // PEDALS => pedals.play(note),
+                                PEDALS if note >= 12 && note <= 19 => {
+                                    synth.change_tuning_bank(note as usize - 12);
+                                }
                                 // _ => {}
                                 _ => synth.play_fixed(note),
                             },

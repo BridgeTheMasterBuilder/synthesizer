@@ -83,46 +83,46 @@ impl Scale {
         self.intervals.len()
     }
 
-    pub fn mode(&self, offset: usize) -> Vec<Interval> {
-        if offset > self.size() {
-            panic!("Oops");
-        }
-
-        let mut intervals = self.intervals.clone();
-
-        intervals.rotate_right(offset);
-
-        if offset > 0 {
-            intervals[0..offset]
-                .iter_mut()
-                .for_each(|v| *v = *v / Interval::Ratio(2, 1));
-        }
-
-        intervals
-    }
+    // pub fn mode(&self, offset: usize) -> Vec<Interval> {
+    //     if offset > self.size() {
+    //         panic!("Oops");
+    //     }
+    //
+    //     let mut intervals = self.intervals.clone();
+    //
+    //     intervals.rotate_right(offset);
+    //
+    //     if offset > 0 {
+    //         intervals[0..offset]
+    //             .iter_mut()
+    //             .for_each(|v| *v = *v / Interval::Ratio(2, 1));
+    //     }
+    //
+    //     intervals
+    // }
 
     pub fn interval_at(&self, i: isize) -> Interval {
         self.intervals[i.rem_euclid(self.intervals.len() as isize) as usize]
     }
 
-    pub fn frequencies(&self, base_freq: f64, base_note: usize) -> Vec<f64> {
-        if base_note > self.size() {
-            panic!("Oops");
-        }
-
-        let mode = self.mode(base_note);
-
-        dbg!(&mode);
-
-        // TODO
-        mode.iter().map(|&interval| base_freq * interval).collect()
-    }
+    // pub fn frequencies(&self, base_freq: f64, base_note: usize) -> Vec<f64> {
+    //     if base_note > self.size() {
+    //         panic!("Oops");
+    //     }
+    //
+    //     let mode = self.mode(base_note);
+    //
+    //     dbg!(&mode);
+    //
+    //     // TODO
+    //     mode.iter().map(|&interval| base_freq * interval).collect()
+    // }
 
     // TODO non-octave
     pub fn frequency_at(&self, base_freq: f64, idx: isize) -> f64 {
         let size = self.size();
         // let octaves = (idx.abs() as usize).saturating_sub(1) / size;
-        let octaves = (idx.abs() as usize) / size;
+        // let octaves = (idx.abs() as usize) / size;
         // let i = idx.rem_euclid(size as isize) as usize;
 
         let interval = self.interval_at(idx);
@@ -191,6 +191,8 @@ pub fn parse_scala_file(filename: &str) -> Scale {
         for i in 0..count {
             let data = &lines[idx + i];
 
+            dbg!(&data);
+
             if data.starts_with('!') {
                 continue;
             } else if data.contains('.') {
@@ -199,6 +201,7 @@ pub fn parse_scala_file(filename: &str) -> Scale {
                 intervals.push(Interval::Cents(cents));
             } else {
                 if data.contains('/') {
+                    // TODO Need to ignore junk that comes after the interval
                     let ratio = data.split('/').collect::<Vec<&str>>();
                     let numerator = ratio[0].parse::<usize>().unwrap();
                     let denominator = ratio[1].parse::<usize>().unwrap();
