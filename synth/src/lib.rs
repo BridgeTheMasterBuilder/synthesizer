@@ -110,7 +110,7 @@ pub struct Synth {
     // TODO visibility
     pub mode: Mode,
     pub timbre_presets: [SynthSetting; 8],
-    pub tuning_presets: Option<[[f64; 128]; 8]>,
+    pub tuning_presets: Option<[[f64; 128]; 24]>,
     // TODO allow for manual and pedals
     voices: [Voice; 109],
     active_voices: BTreeSet<u8>,
@@ -133,7 +133,7 @@ impl Synth {
     // TODO AND ... Send NoteOffs for all active Control notes
     pub fn new(
         timbre_presets: [SynthSetting; 8],
-        tuning_presets: Option<[[f64; 128]; 8]>,
+        tuning_presets: Option<[[f64; 128]; 24]>,
         base_freq: f64,
         base_note: u8,
     ) -> Self {

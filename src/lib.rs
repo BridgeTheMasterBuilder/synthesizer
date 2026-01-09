@@ -167,8 +167,8 @@ struct ManifestEntry {
     tuning_preset_filename: String,
 }
 
-fn parse_tuning_directory(tuning_preset_directory: &str) -> [[f64; 128]; 8] {
-    let mut tunings = [[0.0; 128]; 8];
+fn parse_tuning_directory(tuning_preset_directory: &str) -> [[f64; 128]; 24] {
+    let mut tunings = [[0.0; 128]; 24];
 
     let manifest_path = Path::new(tuning_preset_directory).join("manifest");
     if let Ok(manifest_file) = File::open(manifest_path) {
@@ -216,7 +216,7 @@ pub fn run(options: Options) -> Result<()> {
         if path.is_dir() {
             Some(parse_tuning_directory(&filename))
         } else if path.is_file() {
-            Some([parse_tuning_preset_file(filename.as_str(), base_freq, base_note as usize); 8])
+            Some([parse_tuning_preset_file(filename.as_str(), base_freq, base_note as usize); 24])
         } else {
             panic!("WARNING: ");
         }
@@ -230,6 +230,8 @@ pub fn run(options: Options) -> Result<()> {
     // let mut pedals = Synth::new();
 
     synth.change_timbre_bank(0);
+
+    let mut octave_pedal = false;
 
     loop {
         io.write(&mut synth)?;
@@ -245,6 +247,10 @@ pub fn run(options: Options) -> Result<()> {
                                 // MANUAL => synth.silence(note),
                                 // PEDALS => pedals.silence(note),
                                 // _ => {}
+                                PEDALS if note == 24 => {
+                                    octave_pedal = false;
+                                }
+                                PEDALS => synth.silence(note - 12),
                                 _ => synth.silence(note),
                             },
                             Mode::Dynamic => {
@@ -315,9 +321,18 @@ pub fn run(options: Options) -> Result<()> {
                                 // TODO
                                 // CONTROL => control.play(note),
                                 // MANUAL => synth.play(note),
-                                PEDALS if note >= 12 && note <= 19 => {
+                                PEDALS if note == 24 => {
+                                    octave_pedal = true;
+                                }
+                                PEDALS if note >= 12 && note <= 23 => {
+                                    synth.change_tuning_bank(
+                                        note as usize - if octave_pedal { 0 } else { 12 },
+                                    );
+                                }
+                                PEDALS if note >= 24 && note <= 35 => {
                                     synth.change_tuning_bank(note as usize - 12);
                                 }
+                                PEDALS => synth.play_fixed(note - 24),
                                 // _ => {}
                                 _ => synth.play_fixed(note),
                             },

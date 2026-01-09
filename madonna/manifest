@@ -1,0 +1,122 @@
+[
+    {
+        "base_freq": 264.0,
+        "base_note": 60,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 275.85,
+        "base_note": 61,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 295.13,
+        "base_note": 62,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 315.77,
+        "base_note": 63,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 329.940,
+        "base_note": 64,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 353.01,
+        "base_note": 65,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 368.85,
+        "base_note": 66,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 394.64,
+        "base_note": 67,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 412.35,
+        "base_note": 68,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 441.18,
+        "base_note": 69,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 472.03,
+        "base_note": 70,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 493.21,
+        "base_note": 71,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 270.33,
+        "base_note": 60,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 289.23,
+        "base_note": 61,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 302.21,
+        "base_note": 62,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 323.34,
+        "base_note": 63,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 337.85,
+        "base_note": 64,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 361.47,
+        "base_note": 65,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 386.74,
+        "base_note": 66,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 404.01,
+        "base_note": 67,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 432.35,
+        "base_note": 68,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 451.75,
+        "base_note": 69,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 483.34,
+        "base_note": 70,
+        "tuning_preset_filename": "just.scl"
+    },
+    {
+        "base_freq": 505.03,
+        "base_note": 71,
+        "tuning_preset_filename": "just.scl"
+    }
+]
